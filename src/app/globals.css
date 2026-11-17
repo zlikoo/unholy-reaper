@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/* Farben angelehnt an den Club-Patch: Schwarz, Anthrazit, Blutrot, Knochenweiß, Messing */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Oswald Variable", "Arial Narrow", ui-sans-serif, sans-serif;
+  --font-brand: "Rye", "Oswald Variable", Georgia, serif;
+
+  --color-ink: #0a0a0b;
+  --color-coal: #111214;
+  --color-panel: #18191c;
+  --color-panel-2: #212327;
+  --color-line: #2e3035;
+  --color-bone: #ebe4d6;
+  --color-ash: #9d988f;
+  --color-blood: #b5121b;
+  --color-blood-bright: #e0262f;
+  --color-blood-dark: #5c0a0e;
+  --color-brass: #c49a48;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-ink font-sans text-bone antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgb(181 18 27 / 0.12), transparent 70%),
+      radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.025) 1px, transparent 0);
+    background-size: auto, 22px 22px;
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: var(--color-blood);
+    color: white;
+  }
+
+  /* Native Datums-/Auswahlfelder im dunklen Look */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+  }
+
+  select option {
+    background: var(--color-panel);
+  }
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}

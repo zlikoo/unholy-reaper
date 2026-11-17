@@ -1,0 +1,314 @@
+// Datenmodell für das Unholy Reaper MC Verwaltungstool.
+// Alle Daten sind fiktive In-Game-Daten eines GTA-Roleplay-Servers.
+//
+// Umstieg auf Postgres: provider auf "postgresql" ändern, DATABASE_URL anpassen
+// und in src/lib/db.ts den Adapter tauschen (siehe README).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  PRESIDENT
+  VICE_PRESIDENT
+  SERGEANT_AT_ARMS
+  TREASURER
+  MEMBER
+  PROSPECT
+  HANGAROUND
+}
+
+enum VehicleType {
+  MOTORCYCLE
+  CAR
+  OTHER
+}
+
+enum VehicleStatus {
+  IN_GARAGE
+  ON_ROAD
+  DAMAGED
+  IMPOUNDED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+}
+
+enum TransactionCategory {
+  DONATION
+  SALE
+  WEAPONS
+  VEHICLES
+  OTHER
+}
+
+enum TransactionStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+enum WeaponStatus {
+  IN_STOCK
+  ISSUED
+  LOST
+}
+
+enum PostCategory {
+  INFO
+  IMPORTANT
+  EVENT
+  RIDE
+  OTHER
+}
+
+enum PostAudience {
+  ALL
+  PROSPECTS
+  MEMBERS
+  OFFICERS
+}
+
+enum RuleSection {
+  CLUB_RULES
+  HIERARCHY
+  HANGAROUND
+  PROSPECT
+}
+
+enum WeaponMovementType {
+  STOCK_IN
+  ISSUE
+  RETURN
+  LOST
+  FOUND
+}
+
+/// Ein Mitglied des Clubs mit eigenem Login.
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  /// Name des Charakters
+  name         String
+  /// Spitzname im Club ("Road Name")
+  roadName     String?
+  role         Role     @default(PROSPECT)
+  active       Boolean  @default(true)
+  joinedAt     DateTime @default(now())
+  notes        String?
+  /// Fullpatch, der für einen Prospect oder Hangaround bürgt
+  sponsorId    String?
+  sponsor      User?    @relation("Sponsor", fields: [sponsorId], references: [id], onDelete: SetNull)
+  sponsored    User[]   @relation("Sponsor")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions                 Session[]
+  vehicles                 Vehicle[]        @relation("VehicleOwner")
+  transactions             Transaction[]    @relation("TransactionMember")
+  createdTransactions      Transaction[]    @relation("TransactionCreatedBy")
+  reviewedTransactions     Transaction[]    @relation("TransactionReviewedBy")
+  weaponsHeld              Weapon[]         @relation("WeaponHolder")
+  weaponMovementsAsMember  WeaponMovement[] @relation("MovementMember")
+  weaponMovementsPerformed WeaponMovement[] @relation("MovementPerformedBy")
+  activityLogs             ActivityLog[]
+  posts                    Post[]
+}
+
+/// Login-Sitzung. Die ID ist der SHA-256-Hash des Tokens aus dem Cookie.
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Vehicle {
+  id        String        @id @default(cuid())
+  model     String
+  plate     String        @unique
+  type      VehicleType
+  /// Leer = Clubfahrzeug
+  ownerId   String?
+  owner     User?         @relation("VehicleOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  status    VehicleStatus @default(IN_GARAGE)
+  location  String?
+  notes     String?
+  imageUrl  String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([type])
+  @@index([status])
+}
+
+model Transaction {
+  id          String              @id @default(cuid())
+  type        TransactionType
+  /// Betrag in ganzen Dollar, immer positiv
+  amount      Int
+  category    TransactionCategory
+  description String
+  memberId    String?
+  member      User?               @relation("TransactionMember", fields: [memberId], references: [id], onDelete: SetNull)
+  date        DateTime
+  status      TransactionStatus   @default(APPROVED)
+  createdById String?
+  createdBy   User?               @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  reviewedById String?
+  reviewedBy  User?               @relation("TransactionReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt  DateTime?
+  createdAt   DateTime            @default(now())
+
+  @@index([date])
+  @@index([status])
+}
+
+/// Ein Lagerposten. Bei Teil-Ausgaben wird der Posten aufgeteilt,
+/// bei Rückgabe wieder mit dem Lagerposten gleicher Waffe/Seriennummer zusammengeführt.
+model Weapon {
+  id           String       @id @default(cuid())
+  name         String
+  serialNumber String?
+  quantity     Int
+  status       WeaponStatus @default(IN_STOCK)
+  /// Ausgegeben an (bei Status "verloren": zuletzt bei)
+  holderId     String?
+  holder       User?        @relation("WeaponHolder", fields: [holderId], references: [id], onDelete: SetNull)
+  issuedAt     DateTime?
+  /// Schließfach, in dem der Posten liegt (nur bei Status "im Lager")
+  lockerId     String?
+  locker       Locker?      @relation(fields: [lockerId], references: [id], onDelete: SetNull)
+  notes        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  movements WeaponMovement[]
+
+  @@index([name])
+  @@index([status])
+  @@index([lockerId])
+}
+
+/// Historie der Ein-, Aus- und Rückgaben. Name und Seriennummer werden mitgespeichert,
+/// damit die Historie erhalten bleibt, wenn Posten zusammengeführt oder gelöscht werden.
+model WeaponMovement {
+  id            String             @id @default(cuid())
+  weaponId      String?
+  weapon        Weapon?            @relation(fields: [weaponId], references: [id], onDelete: SetNull)
+  weaponName    String
+  serialNumber  String?
+  type          WeaponMovementType
+  quantity      Int
+  memberId      String?
+  member        User?              @relation("MovementMember", fields: [memberId], references: [id], onDelete: SetNull)
+  date          DateTime
+  performedById String?
+  performedBy   User?              @relation("MovementPerformedBy", fields: [performedById], references: [id], onDelete: SetNull)
+  /// Beteiligtes Schließfach (Einlagerung, Ausgabe aus, Rückgabe in)
+  lockerId      String?
+  locker        Locker?            @relation(fields: [lockerId], references: [id], onDelete: SetNull)
+  lockerName    String?
+  note          String?
+  createdAt     DateTime           @default(now())
+
+  @@index([date])
+  @@index([weaponName])
+}
+
+/// Schließfach auf dem Server (Waffenlager). Code und Passwort sind verschlüsselt gespeichert.
+model Locker {
+  id                String   @id @default(cuid())
+  name              String
+  /// Fachnummer im Spiel
+  number            String?
+  location          String?
+  /// Zahlenschloss-Code, AES-256-GCM verschlüsselt
+  codeEncrypted     String?
+  /// Passwort, AES-256-GCM verschlüsselt
+  passwordEncrypted String?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  access    LockerAccess[]
+  weapons   Weapon[]
+  movements WeaponMovement[]
+}
+
+/// Welche Ränge ein Schließfach sehen dürfen.
+model LockerAccess {
+  lockerId String
+  locker   Locker @relation(fields: [lockerId], references: [id], onDelete: Cascade)
+  role     Role
+
+  @@id([lockerId, role])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// z. B. "vehicle.create", "transaction.approve"
+  action     String
+  /// VEHICLE, TRANSACTION, WEAPON, LOCKER, MEMBER, POST, RULES, SETTINGS
+  entityType String
+  entityId   String?
+  summary    String
+  /// JSON: { feld: [alt, neu] }
+  details    String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entityType])
+}
+
+/// Aushang am Schwarzen Brett.
+model Post {
+  id        String       @id @default(cuid())
+  title     String
+  content   String
+  category  PostCategory @default(INFO)
+  /// Wer den Aushang sehen darf
+  audience  PostAudience @default(PROSPECTS)
+  pinned    Boolean      @default(false)
+  /// Optionaler Termin (z. B. Ausfahrt, Church)
+  eventAt   DateTime?
+  authorId  String?
+  author    User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([pinned, createdAt])
+}
+
+/// Eintrag der Clubregeln oder der Hierarchie-Beschreibung.
+model ClubRule {
+  id        String      @id @default(cuid())
+  section   RuleSection
+  title     String
+  content   String
+  sortOrder Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([section, sortOrder])
+}
+
+/// Einfache Schlüssel/Wert-Einstellungen, z. B. die Freigabegrenze der Kasse.
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
