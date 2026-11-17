@@ -1,6 +1,8 @@
 // Prüft vor dem Vercel-Build, ob alle nötigen Umgebungsvariablen gesetzt und plausibel sind.
 // Passwörter werden dabei nie ausgegeben, nur maskiert.
 
+import "dotenv/config";
+
 const problems = [];
 const warnings = [];
 

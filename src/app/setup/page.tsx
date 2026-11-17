@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Logo } from "@/components/layout/logo";
 import { Card, CardBody } from "@/components/ui/card";
-import { ActionForm, Field, Input, SubmitButton } from "@/components/ui/form";
+import { ActionForm, Field, Input, Select, SubmitButton } from "@/components/ui/form";
 import { PASSWORD_MIN_LENGTH } from "@/features/auth/password";
 import { setupAction } from "@/features/setup/actions";
 import { setupAvailable, setupCodeRequired } from "@/features/setup/status";
@@ -23,7 +23,7 @@ export default async function SetupPage() {
           <Logo className="mx-auto size-28" />
           <h1 className="mt-4 font-brand text-3xl tracking-wide text-bone">Ersteinrichtung</h1>
           <p className="mt-2 text-sm text-ash">
-            Lege den ersten Account an. Er bekommt den Rang President und kann danach alle weiteren Mitglieder aufnehmen.
+            Lege den ersten Account an. Als IT oder President hat er alle Rechte und kann danach alle weiteren Mitglieder aufnehmen.
             Die Clubregeln werden mit den Startinhalten gefüllt.
           </p>
         </div>
@@ -37,6 +37,12 @@ export default async function SetupPage() {
               )}
               <Field name="name" label="Name (Charakter)">
                 <Input name="name" maxLength={80} required />
+              </Field>
+              <Field name="role" label="Rang" hint="IT: technischer Admin mit allen Rechten. President: Clubchef mit allen Rechten.">
+                <Select name="role" defaultValue="IT">
+                  <option value="IT">IT</option>
+                  <option value="PRESIDENT">President</option>
+                </Select>
               </Field>
               <Field name="username" label="Benutzername" hint="Kleinbuchstaben, Ziffern, . _ -">
                 <Input name="username" autoCapitalize="none" spellCheck={false} maxLength={30} required />

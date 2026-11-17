@@ -63,7 +63,7 @@ Die App läuft dann unter http://localhost:3000.
 
 ## Ersten Admin-Account anlegen
 
-Der erste Account bekommt den Rang President und kann danach alle weiteren Mitglieder in der App unter „Mitglieder → Mitglied aufnehmen“ anlegen. Ist die Datenbank noch leer, legt das Skript außerdem die Clubregeln, die Hierarchie und die Regeln für Hangarounds und Prospects mit euren Startinhalten an (Quelle: `src/features/rules/default-rules.ts`).
+Der erste Account bekommt den Rang President (mit `--role it` den Rang IT) und kann danach alle weiteren Mitglieder in der App unter „Mitglieder → Mitglied aufnehmen“ anlegen. Ist die Datenbank noch leer, legt das Skript außerdem die Clubregeln, die Hierarchie und die Regeln für Hangarounds und Prospects mit euren Startinhalten an (Quelle: `src/features/rules/default-rules.ts`).
 
 Interaktiv (fragt Benutzername, Name und Passwort ab):
 
@@ -112,24 +112,24 @@ Für den echten Einsatz mit einer leeren Datenbank starten: Dev-Server stoppen, 
 
 Lesen dürfen alle ab Prospect. Hangarounds sind keine Mitglieder und sehen nur Dashboard, Schwarzes Brett (Aushänge „für alle“) und die Clubregeln.
 
-| Bereich | Hangaround | Prospect | Fullpatch | IT | Road Captain | Secretary/Treasurer | Sergeant at Arms | Vice | President |
+| Bereich | Hangaround | Prospect | Fullpatch | Road Captain | Secretary/Treasurer | Sergeant at Arms | Vice | President | IT |
 |---|---|---|---|---|---|---|---|---|---|
 | Fahrzeuge anlegen, bearbeiten, ein-/auslagern | – | – | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Fahrzeuge löschen | – | – | – | – | ✓ | – | ✓ | ✓ | ✓ |
+| Fahrzeuge löschen | – | – | – | ✓ | – | ✓ | ✓ | ✓ | ✓ |
 | Waffen einlagern, ausgeben, zurücknehmen | – | – | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Waffen-Posten löschen | – | – | – | – | – | – | ✓ | ✓ | ✓ |
-| Schließfächer anlegen und Zugriff festlegen | – | – | – | – | – | – | ✓ | ✓ | ✓ |
-| Kasse buchen und Buchungen löschen | – | – | – | – | – | ✓ | – | ✓ | ✓ |
-| Große Auszahlungen freigeben, Freigabegrenze ändern | – | – | – | – | – | ✓ | – | – | ✓ |
-| Konten anlegen, Passwörter zurücksetzen, (de)aktivieren | – | – | – | ✓¹ | – | – | – | ✓ | ✓ |
-| Ränge vergeben und ändern | – | – | – | – | – | – | – | ✓ | ✓ |
+| Waffen-Posten löschen | – | – | – | – | – | ✓ | ✓ | ✓ | ✓ |
+| Schließfächer anlegen und Zugriff festlegen | – | – | – | – | – | ✓ | ✓ | ✓ | ✓ |
+| Alle Schließfächer sehen (unabhängig von der Freigabe) | – | – | – | – | – | – | – | ✓ | ✓ |
+| Kasse buchen und Buchungen löschen | – | – | – | – | ✓ | – | ✓ | ✓ | ✓ |
+| Große Auszahlungen freigeben, Freigabegrenze ändern | – | – | – | – | ✓ | – | – | ✓ | ✓ |
+| Mitglieder aufnehmen, Ränge vergeben, Passwörter zurücksetzen | – | – | – | – | – | – | ✓¹ | ✓ | ✓ |
 | Aushänge veröffentlichen (eigene bearbeiten) | – | – | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Alle Aushänge bearbeiten, anpinnen | – | – | – | – | ✓ | – | ✓ | ✓ | ✓ |
-| Aushänge „nur Officers“ sehen | – | – | – | – | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Clubregeln pflegen | – | – | – | – | – | ✓ | – | ✓ | ✓ |
-| Aktivitätslog einsehen | – | – | – | ✓ | – | – | ✓ | ✓ | ✓ |
+| Alle Aushänge bearbeiten, anpinnen | – | – | – | ✓ | – | ✓ | ✓ | ✓ | ✓ |
+| Aushänge „nur Officers“ sehen | – | – | – | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Clubregeln pflegen | – | – | – | – | ✓ | – | ✓ | ✓ | ✓ |
+| Aktivitätslog einsehen | – | – | – | – | – | ✓ | ✓ | ✓ | ✓ |
 
-¹ IT legt Konten nur bis Rang Fullpatch an und bearbeitet keine Officer-Konten (President, Vice, Sergeant at Arms, Secretary/Treasurer, Road Captain). So kann niemand über IT an einen Officer-Account kommen. Ränge ändert IT nicht.
+IT ist der technische Superadmin und darf alles. ¹ Der Vice vergibt weder den Rang President noch IT und kann President- und IT-Konten nicht bearbeiten (auch kein Passwort-Reset). So kommt niemand über einen anderen Account an die Admin-Zugänge.
 
 Zusätzliche Regeln bei Mitgliedern: Nur der President vergibt den Rang President und bearbeitet President-Konten. Niemand kann den eigenen Rang ändern oder sich selbst deaktivieren. Deaktivierte Mitglieder werden sofort abgemeldet.
 
@@ -191,7 +191,7 @@ Neon (über Vercel → Storage) funktioniert ebenso: Die Integration setzt `DATA
 
 Die Funktionen laufen in Dublin (`dub1` in `vercel.json`), nah an der Supabase-Datenbank in `eu-west-1`. Liegt die Datenbank woanders, die Region dort anpassen. Der Build-Befehl `npm run vercel-build` steht ebenfalls in `vercel.json` und wird beim Import automatisch übernommen. Er prüft zuerst, ob `DATABASE_URL`, `SECRET_KEY` und `SETUP_CODE` gesetzt sind, dann das Postgres-Schema, erzeugt den Client, wendet die Migrationen an und baut die App.
 
-Erster Login: Beim ersten Aufruf leitet die App auf `/setup` um. Dort mit dem `SETUP_CODE` den ersten President anlegen; dabei werden auch die Clubregeln angelegt. Danach ist `/setup` gesperrt.
+Erster Login: Beim ersten Aufruf leitet die App auf `/setup` um. Dort mit dem `SETUP_CODE` den ersten Account anlegen (Rang IT oder President, beide mit allen Rechten); dabei werden auch die Clubregeln angelegt. Danach ist `/setup` gesperrt.
 
 Bei einer Schemaänderung: `prisma/schema.prisma` anpassen, lokal `npm run db:migrate` (SQLite), dann `npm run db:pg-schema` und eine Postgres-Migration erzeugen, zum Beispiel gegen eine lokale Postgres-Instanz aus `npx prisma dev`:
 

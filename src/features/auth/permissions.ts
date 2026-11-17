@@ -6,7 +6,8 @@
 // und sehen nur Dashboard, Schwarzes Brett (Aushänge "für alle") und die Clubregeln.
 //
 // Road Captain: Officer für Ausfahrten und Fahrzeuge.
-// IT: technische Verwaltung der App (Accounts, Passwörter, Log), ohne Rangvergabe.
+// IT: technischer Superadmin der App und darf alles (auch alle Schließfächer sehen).
+//     IT-Konten bearbeiten und den Rang IT vergeben dürfen nur President und IT.
 import type { PostAudience } from "@/generated/prisma/enums";
 import { Role } from "@/generated/prisma/enums";
 
@@ -39,18 +40,27 @@ export const PERMISSIONS = {
   "treasury.approve": [PRESIDENT, TREASURER],
   /** Freigabegrenze ändern */
   "treasury.settings": [PRESIDENT, TREASURER],
-  /** Ränge vergeben und ändern (dazu: Konten aller Ränge verwalten) */
+  /** Ränge vergeben und ändern */
   "members.manage": [PRESIDENT, VICE_PRESIDENT],
-  /** Konten verwalten: anlegen (bis Fullpatch), Passwort zurücksetzen, (de)aktivieren – ohne Officers */
-  "members.accounts": [PRESIDENT, VICE_PRESIDENT, IT],
+  /** Konten verwalten: anlegen, Passwort zurücksetzen, (de)aktivieren */
+  "members.accounts": [PRESIDENT, VICE_PRESIDENT],
   /** Aktivitätslog einsehen */
   "log.view": [PRESIDENT, VICE_PRESIDENT, SERGEANT_AT_ARMS, IT],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;
 
+/** Ränge mit allen Rechten. */
+export const SUPERADMIN_ROLES: readonly Role[] = [IT];
+
 export function can(role: Role, permission: Permission) {
+  if (SUPERADMIN_ROLES.includes(role)) return true;
   return (PERMISSIONS[permission] as readonly Role[]).includes(role);
+}
+
+/** President und IT sehen alle Schließfächer, unabhängig von deren Freigaben. */
+export function seesAllLockers(role: Role) {
+  return role === PRESIDENT || SUPERADMIN_ROLES.includes(role);
 }
 
 /** Officers des Clubs (für Aushänge "nur Officers" und den Schutz ihrer Konten). */
@@ -65,6 +75,7 @@ export function isOfficer(role: Role) {
 
 /** Welche Aushänge ein Rang am Schwarzen Brett sieht. */
 export function visibleAudiences(role: Role): PostAudience[] {
+  if (SUPERADMIN_ROLES.includes(role)) return ["ALL", "PROSPECTS", "MEMBERS", "OFFICERS"];
   if (role === HANGAROUND) return ["ALL"];
   if (role === PROSPECT) return ["ALL", "PROSPECTS"];
   if (isOfficer(role)) return ["ALL", "PROSPECTS", "MEMBERS", "OFFICERS"];
@@ -73,27 +84,25 @@ export function visibleAudiences(role: Role): PostAudience[] {
 
 // ---------------------------------------------------------------- Mitgliederverwaltung
 
-/** Ränge, die IT beim Anlegen vergeben darf. */
-const IT_ASSIGNABLE: readonly Role[] = [MEMBER, PROSPECT, HANGAROUND];
+/** Ränge, die nur President und IT vergeben bzw. deren Konten nur sie bearbeiten. */
+const PROTECTED_ROLES: readonly Role[] = [PRESIDENT, IT];
 
 /** Welche Ränge ein Rang beim Anlegen oder Ändern vergeben darf. */
 export function assignableRoles(editor: Role, allRoles: readonly Role[]): Role[] {
-  if (editor === PRESIDENT) return [...allRoles];
-  if (editor === VICE_PRESIDENT) return allRoles.filter((r) => r !== PRESIDENT);
-  if (editor === IT) return allRoles.filter((r) => IT_ASSIGNABLE.includes(r));
+  if (editor === PRESIDENT || editor === IT) return [...allRoles];
+  if (editor === VICE_PRESIDENT) return allRoles.filter((r) => !PROTECTED_ROLES.includes(r));
   return [];
 }
 
 /** Darf `editor` das Konto eines Mitglieds mit Rang `target` bearbeiten (Stammdaten, Passwort, Status)? */
 export function canEditMember(editor: Role, target: Role) {
-  if (editor === PRESIDENT) return true;
-  if (editor === VICE_PRESIDENT) return target !== PRESIDENT;
-  // IT verwaltet nur Konten ohne Officer-Rang, damit niemand über IT an einen Officer-Account kommt.
-  if (editor === IT) return !isOfficer(target);
+  if (editor === PRESIDENT || editor === IT) return true;
+  // Der Vice kann President- und IT-Konten nicht bearbeiten (auch kein Passwort-Reset).
+  if (editor === VICE_PRESIDENT) return !PROTECTED_ROLES.includes(target);
   return false;
 }
 
-/** Darf `editor` Ränge ändern? (IT nicht) */
+/** Darf `editor` Ränge ändern? */
 export function canChangeRanks(editor: Role) {
   return can(editor, "members.manage");
 }

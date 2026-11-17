@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { actionError, validationError, type ActionState } from "@/lib/action-state";
-import { formToObject, requiredText } from "@/lib/validation";
+import { enumField, formToObject, requiredText } from "@/lib/validation";
+import { ROLE_LABELS } from "@/lib/labels";
 import { logActivity } from "@/features/activity/log";
 import { hashPassword } from "@/features/auth/password";
 import { createSession } from "@/features/auth/session";
@@ -18,6 +19,7 @@ const setupSchema = z
     setupCode: z.preprocess((v) => (typeof v === "string" ? v.trim() : ""), z.string()),
     username: usernameField,
     name: requiredText("Name", 80),
+    role: enumField(["IT", "PRESIDENT"] as const, "einen Rang"),
     password: passwordField,
     confirmPassword: z.string(),
   })
@@ -47,7 +49,7 @@ export async function setupAction(_prev: ActionState, formData: FormData): Promi
     // Erneut prüfen, damit zwei gleichzeitige Einrichtungen nicht zwei Presidents anlegen.
     if ((await tx.user.count()) > 0) return null;
     const created = await tx.user.create({
-      data: { username: data.username, name: data.name, passwordHash, role: "PRESIDENT", active: true },
+      data: { username: data.username, name: data.name, passwordHash, role: data.role, active: true },
     });
     if ((await tx.clubRule.count()) === 0) {
       await tx.clubRule.createMany({ data: DEFAULT_RULES.map((rule, index) => ({ ...rule, sortOrder: index })) });
@@ -58,7 +60,7 @@ export async function setupAction(_prev: ActionState, formData: FormData): Promi
         action: "member.create",
         entityType: "MEMBER",
         entityId: created.id,
-        summary: `Ersteinrichtung: President-Konto „${created.name}“ angelegt`,
+        summary: `Ersteinrichtung: ${ROLE_LABELS[created.role]}-Konto „${created.name}“ angelegt`,
       },
       tx,
     );

@@ -2,28 +2,28 @@ import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Role } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
-import { can } from "@/features/auth/permissions";
+import { can, seesAllLockers } from "@/features/auth/permissions";
 
-// Sichtbarkeit von Schließfächern: Der President sieht alle Fächer, alle anderen nur
+// Sichtbarkeit von Schließfächern: President und IT sehen alle Fächer, alle anderen nur
 // Fächer, die für ihren Rang freigeschaltet sind. Hangarounds sehen keine.
 // Waffen, die in einem unsichtbaren Fach liegen, sind ebenfalls unsichtbar.
 // Ausgegebene oder verlorene Waffen liegen in keinem Fach und sind für alle Mitglieder sichtbar.
 
 export function lockerWhere(role: Role): Prisma.LockerWhereInput {
   if (!can(role, "club.view")) return { id: "__none__" };
-  if (role === "PRESIDENT") return {};
+  if (seesAllLockers(role)) return {};
   return { access: { some: { role } } };
 }
 
 export function weaponWhere(role: Role): Prisma.WeaponWhereInput {
   if (!can(role, "club.view")) return { id: "__none__" };
-  if (role === "PRESIDENT") return {};
+  if (seesAllLockers(role)) return {};
   return { OR: [{ lockerId: null }, { locker: { is: { access: { some: { role } } } } }] };
 }
 
 export function movementWhere(role: Role): Prisma.WeaponMovementWhereInput {
   if (!can(role, "club.view")) return { id: "__none__" };
-  if (role === "PRESIDENT") return {};
+  if (seesAllLockers(role)) return {};
   return { OR: [{ lockerId: null }, { locker: { is: { access: { some: { role } } } } }] };
 }
 

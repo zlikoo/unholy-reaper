@@ -62,7 +62,7 @@ export function LockerForm({
         </Field>
       </div>
 
-      <Field name="roles" label="Wer darf das Fach sehen?" hint="Der President sieht immer alle Fächer. Hangarounds nie.">
+      <Field name="roles" label="Wer darf das Fach sehen?" hint="President und IT sehen immer alle Fächer. Hangarounds nie.">
         <div className="grid gap-2 rounded-md border border-line bg-ink/40 p-3 sm:grid-cols-2">
           {selectable.map((role) =>
             role === "PRESIDENT" ? (

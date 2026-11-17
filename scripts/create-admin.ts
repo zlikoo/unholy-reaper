@@ -1,10 +1,11 @@
-// Legt den ersten Admin-Account (Rang President) an.
+// Legt den ersten Admin-Account an (Rang President, mit --role it als IT).
 //
 // Interaktiv:
 //   npm run admin:create
 //
 // Mit Parametern:
 //   npm run admin:create -- --username grim --name "Elias Voss" --password "geheim123"
+//   npm run admin:create -- --username nick --name "Nick" --password "geheim123" --role it
 //
 // Sind noch keine Clubregeln gespeichert, werden die Startinhalte aus src/features/rules/default-rules.ts angelegt.
 //
@@ -79,12 +80,17 @@ async function main() {
     }
     if (password.length < MIN_PASSWORD) throw new Error(`Das Passwort muss mindestens ${MIN_PASSWORD} Zeichen haben.`);
 
+    const roleArg = (arg("role") ?? "president").toLowerCase();
+    if (roleArg !== "president" && roleArg !== "it") throw new Error('--role muss "president" oder "it" sein.');
+    const role = roleArg === "it" ? "IT" : "PRESIDENT";
+    const roleLabel = role === "IT" ? "IT" : "President";
+
     const passwordHash = await bcrypt.hash(password, 12);
 
     if (existing) {
       await db.user.update({
         where: { id: existing.id },
-        data: { passwordHash, role: "PRESIDENT", active: true },
+        data: { passwordHash, role, active: true },
       });
       await db.session.deleteMany({ where: { userId: existing.id } });
       await db.activityLog.create({
@@ -93,13 +99,13 @@ async function main() {
           action: "member.reset",
           entityType: "MEMBER",
           entityId: existing.id,
-          summary: `Konto „${existing.name}“ per Kommandozeile zurückgesetzt (President, aktiv, neues Passwort)`,
+          summary: `Konto „${existing.name}“ per Kommandozeile zurückgesetzt (${roleLabel}, aktiv, neues Passwort)`,
         },
       });
-      console.log(`Konto „${username}“ wurde zurückgesetzt und ist jetzt President.`);
+      console.log(`Konto „${username}“ wurde zurückgesetzt und ist jetzt ${roleLabel}.`);
     } else {
       const user = await db.user.create({
-        data: { username, name, passwordHash, role: "PRESIDENT", active: true },
+        data: { username, name, passwordHash, role, active: true },
       });
       await db.activityLog.create({
         data: {
@@ -107,10 +113,10 @@ async function main() {
           action: "member.create",
           entityType: "MEMBER",
           entityId: user.id,
-          summary: `Admin-Konto „${name}“ (President) per Kommandozeile angelegt`,
+          summary: `Admin-Konto „${name}“ (${roleLabel}) per Kommandozeile angelegt`,
         },
       });
-      console.log(`Admin-Konto „${username}“ (President) wurde angelegt. Login unter /login.`);
+      console.log(`Admin-Konto „${username}“ (${roleLabel}) wurde angelegt. Login unter /login.`);
 
       // Beim ersten Einrichten die Clubregeln mit den Startinhalten füllen.
       if ((await db.clubRule.count()) === 0) {

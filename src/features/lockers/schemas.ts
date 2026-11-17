@@ -34,7 +34,7 @@ export const lockerSchema = z.object({
   clearPassword: checkbox,
   roles: z
     .array(z.enum(ROLES as [(typeof ROLES)[number], ...(typeof ROLES)[number][]]))
-    // Der President hat immer Zugriff, Hangarounds nie.
+    // Der President hat immer Zugriff (IT sieht ohnehin alles), Hangarounds nie.
     .transform((roles) => [...new Set([...roles.filter((r) => r !== "HANGAROUND"), "PRESIDENT" as const])]),
 });
 

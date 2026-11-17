@@ -9,7 +9,7 @@ import { actionError, actionSuccess, noPermission, validationError, type ActionS
 import { formatDate } from "@/lib/format";
 import { ROLE_LABELS, ROLES } from "@/lib/labels";
 import { collectChanges, describeChanges, logActivity } from "@/features/activity/log";
-import { can } from "@/features/auth/permissions";
+import { can, seesAllLockers } from "@/features/auth/permissions";
 import { requireUser } from "@/features/auth/session";
 import { canAccessLocker } from "./access";
 import { lockerFormInput, lockerSchema } from "./schemas";
@@ -32,7 +32,7 @@ export async function createLockerAction(_prev: ActionState, formData: FormData)
   const parsed = lockerSchema.safeParse(lockerFormInput(formData));
   if (!parsed.success) return validationError(parsed.error);
   const data = parsed.data;
-  if (!(data.roles as Role[]).includes(user.role)) {
+  if (!seesAllLockers(user.role) && !(data.roles as Role[]).includes(user.role)) {
     return actionError("Dein eigener Rang muss Zugriff behalten.", { roles: ["Eigenen Rang anhaken."] });
   }
 
@@ -70,7 +70,7 @@ export async function updateLockerAction(lockerId: string, _prev: ActionState, f
   const parsed = lockerSchema.safeParse(lockerFormInput(formData));
   if (!parsed.success) return validationError(parsed.error);
   const data = parsed.data;
-  if (!(data.roles as Role[]).includes(user.role)) {
+  if (!seesAllLockers(user.role) && !(data.roles as Role[]).includes(user.role)) {
     return actionError("Du kannst deinem eigenen Rang den Zugriff nicht entziehen.", { roles: ["Eigenen Rang anhaken."] });
   }
 
