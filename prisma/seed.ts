@@ -81,6 +81,8 @@ async function main() {
     { key: "hatchet", username: "hatchet", name: "Marcus Kane", roadName: "Hatchet", role: "VICE_PRESIDENT", joinedDaysAgo: 400 },
     { key: "bones", username: "bones", name: "Dante Ruiz", roadName: "Bones", role: "SERGEANT_AT_ARMS", joinedDaysAgo: 310, notes: "Zuständig für Sicherheit und das Waffenlager." },
     { key: "ledger", username: "ledger", name: "Lena Hartmann", roadName: "Ledger", role: "TREASURER", joinedDaysAgo: 250, notes: "Führt die Clubkasse." },
+    { key: "wheels", username: "wheels", name: "Ray Castillo", roadName: "Wheels", role: "ROAD_CAPTAIN", joinedDaysAgo: 280, notes: "Plant die Ausfahrten und hält die Club-Bikes in Schuss." },
+    { key: "byte", username: "byte", name: "Mia Novak", roadName: "Byte", role: "IT", joinedDaysAgo: 120, notes: "Kümmert sich um das Verwaltungstool und die Accounts." },
     { key: "spoke", username: "spoke", name: "Tommy Walsh", roadName: "Spoke", role: "MEMBER", joinedDaysAgo: 160, notes: "Mechaniker, kümmert sich um die Bikes." },
     { key: "rust", username: "rust", name: "Viktor Petrov", roadName: "Rust", role: "MEMBER", joinedDaysAgo: 95 },
     { key: "smoke", username: "smoke", name: "Jesse Carter", roadName: "Smoke", role: "MEMBER", joinedDaysAgo: 200, active: false, notes: "Seit Oktober inaktiv (Charakter pausiert)." },
@@ -185,7 +187,7 @@ async function main() {
 
   // ---------------------------------------------------------------- Schließfächer
   // Hangarounds bekommen nie Zugriff auf Schließfächer.
-  const allRoles: Role[] = ["PRESIDENT", "VICE_PRESIDENT", "SERGEANT_AT_ARMS", "TREASURER", "MEMBER", "PROSPECT"];
+  const allRoles: Role[] = ["PRESIDENT", "VICE_PRESIDENT", "SERGEANT_AT_ARMS", "TREASURER", "ROAD_CAPTAIN", "IT", "MEMBER", "PROSPECT"];
   const fullMembers = allRoles.filter((r) => r !== "PROSPECT");
   const paid = (y: number, m: number, d: number) => zonedTimeToDate(y, m, d, 12, 0);
   const lockerData: Array<{

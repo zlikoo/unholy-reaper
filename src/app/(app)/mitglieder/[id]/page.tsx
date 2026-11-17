@@ -7,7 +7,7 @@ import { ActionForm, Field, Input, SubmitButton } from "@/components/ui/form";
 import { BackLink, DetailItem, Plate } from "@/components/ui/misc";
 import { AccessDenied } from "@/components/ui/misc";
 import { PageHeader } from "@/components/ui/page-header";
-import { can, SPONSOR_ROLES } from "@/features/auth/permissions";
+import { assignableRoles, can, canChangeRanks, canEditMember, SPONSOR_ROLES } from "@/features/auth/permissions";
 import { PASSWORD_MIN_LENGTH } from "@/features/auth/password";
 import { requireUser } from "@/features/auth/session";
 import { resetMemberPasswordAction, updateMemberAction } from "@/features/members/actions";
@@ -18,6 +18,7 @@ import { formatDate, formatMoney } from "@/lib/format";
 import {
   memberDisplayName,
   ROLE_LABELS,
+  ROLES,
   ROLE_TONES,
   TRANSACTION_TYPE_LABELS,
   VEHICLE_STATUS_LABELS,
@@ -45,9 +46,9 @@ export default async function MemberPage({ params }: PageProps<"/mitglieder/[id]
   });
   if (!member) notFound();
 
-  const canManage = can(user.role, "members.manage");
+  const canManage = can(user.role, "members.accounts");
   const isSelf = member.id === user.id;
-  const editable = canManage && (member.role !== "PRESIDENT" || user.role === "PRESIDENT");
+  const editable = canManage && canEditMember(user.role, member.role);
   const issuedWeapons = member.weaponsHeld.filter((w) => w.status === "ISSUED");
 
   return (
@@ -164,7 +165,8 @@ export default async function MemberPage({ params }: PageProps<"/mitglieder/[id]
                 <MemberForm
                   action={updateMemberAction.bind(null, member.id)}
                   member={member}
-                  canAssignPresident={user.role === "PRESIDENT"}
+                  assignableRoles={assignableRoles(user.role, ROLES)}
+                  rankLocked={!canChangeRanks(user.role)}
                   sponsors={await getMemberOptions({ roles: SPONSOR_ROLES, include: [member.sponsorId] })}
                   isSelf={isSelf}
                   submitLabel="Speichern"

@@ -57,7 +57,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/mitglied
         title="Mitglieder"
         description={`${activeCount} aktiv, ${members.length - activeCount} inaktiv${q || role || status ? " (gefiltert)" : ""}.`}
         actions={
-          can(user.role, "members.manage") && (
+          can(user.role, "members.accounts") && (
             <LinkButton href="/mitglieder/neu">
               <UserPlus className="size-4" /> Mitglied aufnehmen
             </LinkButton>

@@ -10,6 +10,7 @@ const tones: Record<BadgeTone, string> = {
   brass: "bg-brass/10 text-brass ring-brass/40",
   blue: "bg-sky-500/10 text-sky-300 ring-sky-500/30",
   bone: "bg-bone/10 text-bone ring-bone/30",
+  violet: "bg-violet-500/10 text-violet-300 ring-violet-500/30",
 };
 
 export function Badge({ tone = "zinc", children, className }: { tone?: BadgeTone; children: ReactNode; className?: string }) {

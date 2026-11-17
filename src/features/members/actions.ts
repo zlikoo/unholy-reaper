@@ -5,12 +5,12 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { actionError, actionSuccess, noPermission, validationError, type ActionState } from "@/lib/action-state";
 import { formatDate } from "@/lib/format";
-import { ROLE_LABELS } from "@/lib/labels";
+import { ROLE_LABELS, ROLES } from "@/lib/labels";
 import { isUniqueViolation } from "@/lib/prisma-errors";
 import { formToObject } from "@/lib/validation";
 import { collectChanges, describeChanges, logActivity } from "@/features/activity/log";
 import { hashPassword } from "@/features/auth/password";
-import { can, SPONSOR_ROLES } from "@/features/auth/permissions";
+import { assignableRoles, can, canChangeRanks, canEditMember, SPONSOR_ROLES } from "@/features/auth/permissions";
 import { destroyAllSessionsOf, requireUser } from "@/features/auth/session";
 import { createMemberSchema, memberSchema, resetPasswordSchema } from "./schemas";
 
@@ -33,14 +33,14 @@ async function sponsorLabel(sponsorId: string | null) {
 
 export async function createMemberAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireUser();
-  if (!can(user.role, "members.manage")) return noPermission();
+  if (!can(user.role, "members.accounts")) return noPermission();
 
   const parsed = createMemberSchema.safeParse(formToObject(formData));
   if (!parsed.success) return validationError(parsed.error);
   const data = parsed.data;
 
-  if (data.role === "PRESIDENT" && user.role !== "PRESIDENT") {
-    return actionError("Nur der President kann den Rang President vergeben.", { role: ["Nicht erlaubt."] });
+  if (!assignableRoles(user.role, ROLES).includes(data.role)) {
+    return actionError(`Den Rang ${ROLE_LABELS[data.role]} darfst du nicht vergeben.`, { role: ["Nicht erlaubt."] });
   }
   if (await db.user.findUnique({ where: { username: data.username } })) {
     return actionError("Dieser Benutzername ist schon vergeben.", { username: ["Bereits vergeben."] });
@@ -81,7 +81,7 @@ export async function createMemberAction(_prev: ActionState, formData: FormData)
 
 export async function updateMemberAction(memberId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
   const user = await requireUser();
-  if (!can(user.role, "members.manage")) return noPermission();
+  if (!can(user.role, "members.accounts")) return noPermission();
 
   const member = await db.user.findUnique({ where: { id: memberId } });
   if (!member) return actionError("Mitglied nicht gefunden.");
@@ -91,11 +91,14 @@ export async function updateMemberAction(memberId: string, _prev: ActionState, f
   const data = parsed.data;
 
   const isSelf = member.id === user.id;
-  if (member.role === "PRESIDENT" && user.role !== "PRESIDENT") {
-    return actionError("Nur der President kann das Konto eines Presidents bearbeiten.");
+  if (!canEditMember(user.role, member.role)) {
+    return actionError(`Das Konto eines ${ROLE_LABELS[member.role]} kannst du nicht bearbeiten.`);
   }
-  if (data.role === "PRESIDENT" && member.role !== "PRESIDENT" && user.role !== "PRESIDENT") {
-    return actionError("Nur der President kann den Rang President vergeben.", { role: ["Nicht erlaubt."] });
+  if (data.role !== member.role && !canChangeRanks(user.role)) {
+    return actionError("Ränge ändern nur President und Vice President.", { role: ["Nicht erlaubt."] });
+  }
+  if (data.role !== member.role && !assignableRoles(user.role, ROLES).includes(data.role)) {
+    return actionError(`Den Rang ${ROLE_LABELS[data.role]} darfst du nicht vergeben.`, { role: ["Nicht erlaubt."] });
   }
   if (isSelf && data.role !== member.role) {
     return actionError("Du kannst deinen eigenen Rang nicht ändern.", { role: ["Eigener Rang ist gesperrt."] });
@@ -157,12 +160,12 @@ export async function resetMemberPasswordAction(
   formData: FormData,
 ): Promise<ActionState> {
   const user = await requireUser();
-  if (!can(user.role, "members.manage")) return noPermission();
+  if (!can(user.role, "members.accounts")) return noPermission();
 
   const member = await db.user.findUnique({ where: { id: memberId } });
   if (!member) return actionError("Mitglied nicht gefunden.");
-  if (member.role === "PRESIDENT" && user.role !== "PRESIDENT") {
-    return actionError("Nur der President kann das Passwort eines Presidents zurücksetzen.");
+  if (!canEditMember(user.role, member.role)) {
+    return actionError(`Das Passwort eines ${ROLE_LABELS[member.role]} kannst du nicht zurücksetzen.`);
   }
 
   const parsed = resetPasswordSchema.safeParse(formToObject(formData));

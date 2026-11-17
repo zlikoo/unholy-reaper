@@ -13,7 +13,7 @@ import {
   WeaponStatus,
 } from "@/generated/prisma/enums";
 
-export type BadgeTone = "red" | "green" | "amber" | "zinc" | "brass" | "blue" | "bone";
+export type BadgeTone = "red" | "green" | "amber" | "zinc" | "brass" | "blue" | "bone" | "violet";
 
 /** Ränge in absteigender Reihenfolge. */
 export const ROLES: Role[] = [
@@ -21,6 +21,8 @@ export const ROLES: Role[] = [
   Role.VICE_PRESIDENT,
   Role.SERGEANT_AT_ARMS,
   Role.TREASURER,
+  Role.ROAD_CAPTAIN,
+  Role.IT,
   Role.MEMBER,
   Role.PROSPECT,
   Role.HANGAROUND,
@@ -31,6 +33,8 @@ export const ROLE_LABELS: Record<Role, string> = {
   VICE_PRESIDENT: "Vice President",
   SERGEANT_AT_ARMS: "Sergeant at Arms",
   TREASURER: "Secretary / Treasurer",
+  ROAD_CAPTAIN: "Road Captain",
+  IT: "IT",
   MEMBER: "Fullpatch",
   PROSPECT: "Prospect",
   HANGAROUND: "Hangaround",
@@ -41,6 +45,8 @@ export const ROLE_TONES: Record<Role, BadgeTone> = {
   VICE_PRESIDENT: "red",
   SERGEANT_AT_ARMS: "brass",
   TREASURER: "brass",
+  ROAD_CAPTAIN: "brass",
+  IT: "violet",
   MEMBER: "bone",
   PROSPECT: "blue",
   HANGAROUND: "zinc",

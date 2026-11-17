@@ -20,20 +20,26 @@ type MemberDefaults = {
 export function MemberForm({
   action,
   member,
-  canAssignPresident,
+  assignableRoles,
+  rankLocked = false,
   sponsors,
   isSelf = false,
   submitLabel,
 }: {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
   member?: MemberDefaults;
-  canAssignPresident: boolean;
+  /** Ränge, die der Bearbeiter vergeben darf */
+  assignableRoles: Role[];
+  /** Rang nur anzeigen, nicht ändern (eigenes Konto oder ohne Recht zur Rangvergabe) */
+  rankLocked?: boolean;
   sponsors: MemberOption[];
   isSelf?: boolean;
   submitLabel: string;
 }) {
   const isNew = !member;
-  const roles = ROLES.filter((role) => canAssignPresident || role !== "PRESIDENT" || member?.role === "PRESIDENT");
+  const locked = rankLocked || isSelf;
+  const roles = locked && member ? [member.role] : ROLES.filter((role) => assignableRoles.includes(role));
+  const defaultRole = member?.role ?? (roles.includes("PROSPECT") ? "PROSPECT" : roles[0]);
 
   return (
     <ActionForm action={action} className="space-y-4">
@@ -47,9 +53,19 @@ export function MemberForm({
         <Field name="username" label="Benutzername" hint="Für den Login. Kleinbuchstaben, Ziffern, . _ -">
           <Input name="username" defaultValue={member?.username} autoCapitalize="none" spellCheck={false} maxLength={30} required />
         </Field>
-        <Field name="role" label="Rang" hint={isSelf ? "Deinen eigenen Rang kann nur jemand anderes ändern." : undefined}>
-          {isSelf && <input type="hidden" name="role" value={member?.role} />}
-          <Select name={isSelf ? "role-display" : "role"} defaultValue={member?.role ?? "PROSPECT"} disabled={isSelf}>
+        <Field
+          name="role"
+          label="Rang"
+          hint={
+            isSelf
+              ? "Deinen eigenen Rang kann nur jemand anderes ändern."
+              : locked
+                ? "Ränge ändern nur President und Vice President."
+                : undefined
+          }
+        >
+          {locked && <input type="hidden" name="role" value={member?.role} />}
+          <Select name={locked ? "role-display" : "role"} defaultValue={defaultRole} disabled={locked}>
             {roles.map((role) => (
               <option key={role} value={role}>
                 {ROLE_LABELS[role]}

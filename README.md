@@ -5,7 +5,7 @@ Internes Verwaltungstool für den Motorradclub „Unholy Reaper MC“ auf einem 
 Funktionen:
 
 - Login mit Benutzername und Passwort (bcrypt-Hash), Sitzungen in der Datenbank, Sperre nach 5 Fehlversuchen
-- Rechte nach Rang: President, Vice President, Sergeant at Arms, Secretary/Treasurer, Fullpatch, Prospect, Hangaround
+- Rechte nach Rang: President, Vice President, Sergeant at Arms, Secretary/Treasurer, Road Captain, IT, Fullpatch, Prospect, Hangaround
 - Dashboard mit Kontostand, Fahrzeugen, Waffenbestand, Mitgliedern, Terminen und letzten Aktivitäten
 - Schwarzes Brett mit Kategorien, Terminen, Anpinnen und Sichtbarkeit nach Rang
 - Fahrzeuge mit Suche, Filtern, Karten- und Tabellenansicht, Ein-/Auslagern mit einem Klick
@@ -97,6 +97,8 @@ Nach `npm run db:seed` gibt es diese Konten, alle mit dem Passwort `reaper123`:
 | hatchet | Vice President |
 | bones | Sergeant at Arms |
 | ledger | Secretary / Treasurer |
+| wheels | Road Captain |
+| byte | IT |
 | spoke, rust | Fullpatch |
 | smoke | Fullpatch (inaktiv, Login gesperrt) |
 | rookie | Prospect |
@@ -110,20 +112,24 @@ Für den echten Einsatz mit einer leeren Datenbank starten: Dev-Server stoppen, 
 
 Lesen dürfen alle ab Prospect. Hangarounds sind keine Mitglieder und sehen nur Dashboard, Schwarzes Brett (Aushänge „für alle“) und die Clubregeln.
 
-| Bereich | Hangaround | Prospect | Fullpatch | Secretary/Treasurer | Sergeant at Arms | Vice | President |
-|---|---|---|---|---|---|---|---|
-| Fahrzeuge anlegen, bearbeiten, ein-/auslagern | – | – | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Fahrzeuge löschen | – | – | – | – | ✓ | ✓ | ✓ |
-| Waffen einlagern, ausgeben, zurücknehmen | – | – | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Waffen-Posten löschen | – | – | – | – | ✓ | ✓ | ✓ |
-| Schließfächer anlegen und Zugriff festlegen | – | – | – | – | ✓ | ✓ | ✓ |
-| Kasse buchen und Buchungen löschen | – | – | – | ✓ | – | ✓ | ✓ |
-| Große Auszahlungen freigeben, Freigabegrenze ändern | – | – | – | ✓ | – | – | ✓ |
-| Mitglieder und Ränge verwalten | – | – | – | – | – | ✓ | ✓ |
-| Aushänge veröffentlichen (eigene bearbeiten) | – | – | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Alle Aushänge bearbeiten, anpinnen | – | – | – | – | ✓ | ✓ | ✓ |
-| Clubregeln pflegen | – | – | – | ✓ | – | ✓ | ✓ |
-| Aktivitätslog einsehen | – | – | – | – | ✓ | ✓ | ✓ |
+| Bereich | Hangaround | Prospect | Fullpatch | IT | Road Captain | Secretary/Treasurer | Sergeant at Arms | Vice | President |
+|---|---|---|---|---|---|---|---|---|---|
+| Fahrzeuge anlegen, bearbeiten, ein-/auslagern | – | – | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Fahrzeuge löschen | – | – | – | – | ✓ | – | ✓ | ✓ | ✓ |
+| Waffen einlagern, ausgeben, zurücknehmen | – | – | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Waffen-Posten löschen | – | – | – | – | – | – | ✓ | ✓ | ✓ |
+| Schließfächer anlegen und Zugriff festlegen | – | – | – | – | – | – | ✓ | ✓ | ✓ |
+| Kasse buchen und Buchungen löschen | – | – | – | – | – | ✓ | – | ✓ | ✓ |
+| Große Auszahlungen freigeben, Freigabegrenze ändern | – | – | – | – | – | ✓ | – | – | ✓ |
+| Konten anlegen, Passwörter zurücksetzen, (de)aktivieren | – | – | – | ✓¹ | – | – | – | ✓ | ✓ |
+| Ränge vergeben und ändern | – | – | – | – | – | – | – | ✓ | ✓ |
+| Aushänge veröffentlichen (eigene bearbeiten) | – | – | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Alle Aushänge bearbeiten, anpinnen | – | – | – | – | ✓ | – | ✓ | ✓ | ✓ |
+| Aushänge „nur Officers“ sehen | – | – | – | – | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Clubregeln pflegen | – | – | – | – | – | ✓ | – | ✓ | ✓ |
+| Aktivitätslog einsehen | – | – | – | ✓ | – | – | ✓ | ✓ | ✓ |
+
+¹ IT legt Konten nur bis Rang Fullpatch an und bearbeitet keine Officer-Konten (President, Vice, Sergeant at Arms, Secretary/Treasurer, Road Captain). So kann niemand über IT an einen Officer-Account kommen. Ränge ändert IT nicht.
 
 Zusätzliche Regeln bei Mitgliedern: Nur der President vergibt den Rang President und bearbeitet President-Konten. Niemand kann den eigenen Rang ändern oder sich selbst deaktivieren. Deaktivierte Mitglieder werden sofort abgemeldet.
 
