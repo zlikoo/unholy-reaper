@@ -175,11 +175,11 @@ Umgebungsvariablen im Vercel-Projekt:
 | Variable | Inhalt |
 |---|---|
 | `DATABASE_URL` | Postgres-Verbindung für die App. Bei Supabase der **Transaction Pooler** (Port 6543) mit `?pgbouncer=true&schema=unholy_reaper` |
-| `DIRECT_DATABASE_URL` | Verbindung für Migrationen. Bei Supabase der **Session Pooler** (Port 5432) mit `?schema=unholy_reaper` |
+| `DIRECT_DATABASE_URL` (oder `DIRECT_URL`) | Verbindung für Migrationen. Bei Supabase der **Session Pooler** (Port 5432) mit `?schema=unholy_reaper` |
 | `SECRET_KEY` | Langer Zufallswert für die Schließfach-Verschlüsselung |
 | `SETUP_CODE` | Code für die Ersteinrichtung unter `/setup` |
 
-Mit `?schema=unholy_reaper` legt die App alle Tabellen in ein eigenes Schema. So kann sie ein bestehendes Supabase-Projekt mitbenutzen (der kostenlose Tarif erlaubt nur zwei Projekte), ohne mit dessen Tabellen zu kollidieren. Die Verbindungsdaten stehen in Supabase unter „Connect“.
+Mit `?schema=unholy_reaper` legt die App alle Tabellen in ein eigenes Schema. So kann sie ein bestehendes Supabase-Projekt mitbenutzen (der kostenlose Tarif erlaubt nur zwei Projekte), ohne mit dessen Tabellen zu kollidieren. Die Verbindungsdaten stehen in Supabase unter „Connect → ORMs → Prisma“ (`DATABASE_URL` und `DIRECT_URL`, beide Namen werden erkannt).
 
 Neon (über Vercel → Storage) funktioniert ebenso: Die Integration setzt `DATABASE_URL` und `DATABASE_URL_UNPOOLED`, beide werden automatisch erkannt.
 

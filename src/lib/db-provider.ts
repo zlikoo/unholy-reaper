@@ -15,6 +15,7 @@ export function runtimeDatabaseUrl() {
 export function migrationDatabaseUrl() {
   return (
     process.env.DIRECT_DATABASE_URL ??
+    process.env.DIRECT_URL ?? // so heißt sie in Supabase unter Connect → ORMs → Prisma
     process.env.DATABASE_URL_UNPOOLED ??
     process.env.POSTGRES_URL_NON_POOLING ??
     runtimeDatabaseUrl()
