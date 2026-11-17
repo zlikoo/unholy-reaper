@@ -1,12 +1,15 @@
 import type { Role } from "@/generated/prisma/enums";
 import { ActionForm, Checkbox, Field, Input, SubmitButton, Textarea } from "@/components/ui/form";
 import type { ActionState } from "@/lib/action-state";
+import { toDateInputValue } from "@/lib/dates";
 import { ROLE_LABELS, ROLES } from "@/lib/labels";
 
 type LockerDefaults = {
   name: string;
   number: string | null;
   location: string | null;
+  purpose: string | null;
+  paidAt: Date | null;
   notes: string | null;
   hasCode: boolean;
   hasPassword: boolean;
@@ -30,22 +33,28 @@ export function LockerForm({
   return (
     <ActionForm action={action} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field name="name" label="Bezeichnung">
-          <Input name="name" defaultValue={locker?.name} placeholder="z. B. Clubhaus Keller" maxLength={60} required />
+        <Field name="name" label="Name" hint="Z. B. auf wen das Fach läuft.">
+          <Input name="name" defaultValue={locker?.name} placeholder="z. B. Ezekiel" maxLength={60} required />
         </Field>
-        <Field name="number" label="Fachnummer">
-          <Input name="number" defaultValue={locker?.number ?? ""} placeholder="z. B. 01" maxLength={10} />
+        <Field name="number" label="Schließfachnummer">
+          <Input name="number" defaultValue={locker?.number ?? ""} placeholder="z. B. 84043155" inputMode="numeric" maxLength={20} />
+        </Field>
+        <Field name="purpose" label="Verwendung">
+          <Input name="purpose" defaultValue={locker?.purpose ?? ""} placeholder="z. B. Moonshine / Muffins" maxLength={120} />
+        </Field>
+        <Field name="paidAt" label="Bezahlt am" hint="Leer lassen, wenn unbekannt.">
+          <Input name="paidAt" type="date" defaultValue={locker?.paidAt ? toDateInputValue(locker.paidAt) : ""} />
         </Field>
         <Field name="location" label="Standort" className="sm:col-span-2">
           <Input name="location" defaultValue={locker?.location ?? ""} placeholder="z. B. Clubhaus Sandy Shores, Keller" maxLength={120} />
         </Field>
         <Field
           name="code"
-          label="Zahlenschloss-Code"
+          label="PIN (Zahlenschloss)"
           hint={locker?.hasCode ? "Leer lassen = unverändert." : "3 bis 12 Ziffern."}
         >
           <Input name="code" inputMode="numeric" autoComplete="off" maxLength={12} placeholder={locker?.hasCode ? "••••" : ""} />
-          {locker?.hasCode && <Checkbox name="clearCode" label="Code entfernen" />}
+          {locker?.hasCode && <Checkbox name="clearCode" label="PIN entfernen" />}
         </Field>
         <Field name="password" label="Passwort" hint={locker?.hasPassword ? "Leer lassen = unverändert." : undefined}>
           <Input name="password" autoComplete="off" maxLength={64} placeholder={locker?.hasPassword ? "••••••" : ""} />

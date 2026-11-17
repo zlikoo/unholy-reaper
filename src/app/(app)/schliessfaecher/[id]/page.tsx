@@ -14,7 +14,7 @@ import { deleteLockerAction, updateLockerAction } from "@/features/lockers/actio
 import { LockerForm } from "@/features/lockers/components/locker-form";
 import { LockerSecrets } from "@/features/lockers/components/locker-secrets";
 import { db } from "@/lib/db";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime, formatDaysAgo } from "@/lib/format";
 import { memberDisplayName, ROLE_LABELS, ROLE_TONES, ROLES, WEAPON_MOVEMENT_LABELS } from "@/lib/labels";
 
 export const metadata: Metadata = { title: "Schließfach" };
@@ -57,6 +57,18 @@ export default async function LockerPage({ params }: PageProps<"/schliessfaecher
             <CardBody className="space-y-4">
               <LockerSecrets lockerId={locker.id} hasCode={Boolean(locker.codeEncrypted)} hasPassword={Boolean(locker.passwordEncrypted)} />
               <dl className="grid grid-cols-2 gap-4">
+                <DetailItem label="Schließfachnummer">{locker.number ?? "–"}</DetailItem>
+                <DetailItem label="Verwendung">{locker.purpose ?? "–"}</DetailItem>
+                <DetailItem label="Bezahlt am">
+                  {locker.paidAt ? (
+                    <>
+                      {formatDate(locker.paidAt)} <span className="text-xs text-ash">({formatDaysAgo(locker.paidAt)})</span>
+                    </>
+                  ) : (
+                    "–"
+                  )}
+                </DetailItem>
+                <DetailItem label="Standort">{locker.location ?? "–"}</DetailItem>
                 <DetailItem label="Sichtbar für" className="col-span-2">
                   <span className="flex flex-wrap gap-1.5">
                     {roles.map((r) => (
@@ -133,6 +145,8 @@ export default async function LockerPage({ params }: PageProps<"/schliessfaecher
                   name: locker.name,
                   number: locker.number,
                   location: locker.location,
+                  purpose: locker.purpose,
+                  paidAt: locker.paidAt,
                   notes: locker.notes,
                   hasCode: Boolean(locker.codeEncrypted),
                   hasPassword: Boolean(locker.passwordEncrypted),

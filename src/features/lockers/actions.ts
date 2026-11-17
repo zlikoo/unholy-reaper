@@ -6,6 +6,7 @@ import type { Role } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
 import { actionError, actionSuccess, noPermission, validationError, type ActionState } from "@/lib/action-state";
+import { formatDate } from "@/lib/format";
 import { ROLE_LABELS, ROLES } from "@/lib/labels";
 import { collectChanges, describeChanges, logActivity } from "@/features/activity/log";
 import { can } from "@/features/auth/permissions";
@@ -40,6 +41,8 @@ export async function createLockerAction(_prev: ActionState, formData: FormData)
       name: data.name,
       number: data.number,
       location: data.location,
+      purpose: data.purpose,
+      paidAt: data.paidAt,
       notes: data.notes,
       codeEncrypted: data.code ? encryptSecret(data.code) : null,
       passwordEncrypted: data.password ? encryptSecret(data.password) : null,
@@ -81,7 +84,16 @@ export async function updateLockerAction(lockerId: string, _prev: ActionState, f
   await db.$transaction([
     db.locker.update({
       where: { id: locker.id },
-      data: { name: data.name, number: data.number, location: data.location, notes: data.notes, codeEncrypted, passwordEncrypted },
+      data: {
+        name: data.name,
+        number: data.number,
+        location: data.location,
+        purpose: data.purpose,
+        paidAt: data.paidAt,
+        notes: data.notes,
+        codeEncrypted,
+        passwordEncrypted,
+      },
     }),
     db.lockerAccess.deleteMany({ where: { lockerId: locker.id } }),
     db.lockerAccess.createMany({ data: data.roles.map((role) => ({ lockerId: locker.id, role })) }),
@@ -89,13 +101,15 @@ export async function updateLockerAction(lockerId: string, _prev: ActionState, f
 
   // Code und Passwort selbst landen nie im Log, nur die Tatsache der Änderung.
   const changes = collectChanges({
-    Bezeichnung: [locker.name, data.name],
-    Fachnummer: [locker.number, data.number],
+    Name: [locker.name, data.name],
+    Schließfachnummer: [locker.number, data.number],
     Standort: [locker.location, data.location],
+    Verwendung: [locker.purpose, data.purpose],
+    "Bezahlt am": [locker.paidAt ? formatDate(locker.paidAt) : null, data.paidAt ? formatDate(data.paidAt) : null],
     Notizen: [locker.notes, data.notes],
     Zugriff: [rolesText(locker.access.map((a) => a.role)), rolesText(data.roles)],
   });
-  if (codeEncrypted !== locker.codeEncrypted) changes["Zahlenschloss-Code"] = [locker.codeEncrypted ? "gesetzt" : "–", codeEncrypted ? "geändert" : "entfernt"];
+  if (codeEncrypted !== locker.codeEncrypted) changes.PIN = [locker.codeEncrypted ? "gesetzt" : "–", codeEncrypted ? "geändert" : "entfernt"];
   if (passwordEncrypted !== locker.passwordEncrypted) changes.Passwort = [locker.passwordEncrypted ? "gesetzt" : "–", passwordEncrypted ? "geändert" : "entfernt"];
 
   if (Object.keys(changes).length > 0) {
@@ -151,7 +165,7 @@ export async function revealLockerSecretsAction(lockerId: string): Promise<Revea
     return { ok: false, error: "Entschlüsselung nicht möglich. Ist SECRET_KEY gesetzt?" };
   }
   if ((locker.codeEncrypted && !code) || (locker.passwordEncrypted && !password)) {
-    return { ok: false, error: "Entschlüsselung fehlgeschlagen. Wurde SECRET_KEY geändert? Dann Code und Passwort neu eintragen." };
+    return { ok: false, error: "Entschlüsselung fehlgeschlagen. Wurde SECRET_KEY geändert? Dann PIN und Passwort neu eintragen." };
   }
 
   await logActivity({

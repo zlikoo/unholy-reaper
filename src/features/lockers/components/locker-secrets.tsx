@@ -32,20 +32,20 @@ function SecretValue({ label, value }: { label: string; value: string | null }) 
   );
 }
 
-/** Zeigt Zahlenschloss-Code und Passwort erst nach Klick. Jeder Abruf wird im Log vermerkt. */
+/** Zeigt PIN und Passwort erst nach Klick. Jeder Abruf wird im Log vermerkt. */
 export function LockerSecrets({ lockerId, hasCode, hasPassword }: { lockerId: string; hasCode: boolean; hasPassword: boolean }) {
   const [result, setResult] = useState<RevealResult | null>(null);
   const [pending, startTransition] = useTransition();
 
   if (!hasCode && !hasPassword) {
-    return <p className="text-sm text-ash">Kein Code und kein Passwort hinterlegt.</p>;
+    return <p className="text-sm text-ash">Keine PIN und kein Passwort hinterlegt.</p>;
   }
 
   if (result?.ok) {
     return (
       <div className="space-y-2">
         <div className="grid gap-2 sm:grid-cols-2">
-          {hasCode && <SecretValue label="Zahlenschloss" value={result.code} />}
+          {hasCode && <SecretValue label="PIN" value={result.code} />}
           {hasPassword && <SecretValue label="Passwort" value={result.password} />}
         </div>
         <button type="button" onClick={() => setResult(null)} className={buttonClasses("ghost", "sm")}>
@@ -68,7 +68,7 @@ export function LockerSecrets({ lockerId, hasCode, hasPassword }: { lockerId: st
         onClick={() => startTransition(async () => setResult(await revealLockerSecretsAction(lockerId)))}
         className={buttonClasses("secondary", "sm")}
       >
-        <Eye className="size-3.5" /> {pending ? "Lade …" : "Code & Passwort anzeigen"}
+        <Eye className="size-3.5" /> {pending ? "Lade …" : hasPassword ? "PIN & Passwort anzeigen" : "PIN anzeigen"}
       </button>
       {result && !result.ok && <p className="text-xs text-red-300">{result.error}</p>}
     </div>

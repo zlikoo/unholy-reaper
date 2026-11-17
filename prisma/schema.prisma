@@ -1,8 +1,8 @@
 // Datenmodell für das Unholy Reaper MC Verwaltungstool.
 // Alle Daten sind fiktive In-Game-Daten eines GTA-Roleplay-Servers.
 //
-// Umstieg auf Postgres: provider auf "postgresql" ändern, DATABASE_URL anpassen
-// und in src/lib/db.ts den Adapter tauschen (siehe README).
+// Dieses Schema (SQLite) ist die Quelle. Die Postgres-Variante für Vercel wird mit
+// "npm run db:pg-schema" nach prisma/postgres/schema.prisma erzeugt (siehe README).
 
 generator client {
   provider = "prisma-client"
@@ -229,18 +229,23 @@ model WeaponMovement {
 
 /// Schließfach auf dem Server (Waffenlager). Code und Passwort sind verschlüsselt gespeichert.
 model Locker {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
+  /// Name des Fachs (z. B. auf wen es läuft)
   name              String
-  /// Fachnummer im Spiel
+  /// Schließfachnummer im Spiel
   number            String?
   location          String?
+  /// Wofür das Fach genutzt wird, z. B. "Moonshine / Muffins"
+  purpose           String?
+  /// Wann die Miete zuletzt bezahlt wurde
+  paidAt            DateTime?
   /// Zahlenschloss-Code, AES-256-GCM verschlüsselt
   codeEncrypted     String?
   /// Passwort, AES-256-GCM verschlüsselt
   passwordEncrypted String?
   notes             String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   access    LockerAccess[]
   weapons   Weapon[]

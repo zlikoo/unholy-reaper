@@ -63,3 +63,16 @@ export function formatRelative(date: Date, now = new Date()) {
   if (abs < 7 * 86400) return rtf.format(Math.round(diffSeconds / 86400), "day");
   return formatDateTime(date);
 }
+
+/** "heute", "gestern" oder "vor 12 Tagen" (Kalendertage in der App-Zeitzone). */
+export function formatDaysAgo(date: Date, now = new Date()) {
+  const day = (d: Date) => {
+    const [y, m, dd] = new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE }).format(d).split("-").map(Number);
+    return Date.UTC(y, m - 1, dd);
+  };
+  const days = Math.round((day(now) - day(date)) / 86_400_000);
+  if (days === 0) return "heute";
+  if (days === 1) return "gestern";
+  if (days === -1) return "morgen";
+  return days > 0 ? `vor ${days} Tagen` : `in ${-days} Tagen`;
+}

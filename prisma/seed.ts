@@ -186,11 +186,28 @@ async function main() {
   // ---------------------------------------------------------------- Schließfächer
   // Hangarounds bekommen nie Zugriff auf Schließfächer.
   const allRoles: Role[] = ["PRESIDENT", "VICE_PRESIDENT", "SERGEANT_AT_ARMS", "TREASURER", "MEMBER", "PROSPECT"];
-  const lockerData = [
-    { key: "keller", name: "Clubhaus Keller", number: "01", location: "Clubhaus Sandy Shores, Keller", code: "4471", password: "grimreaper", roles: allRoles.filter((r) => r !== "PROSPECT"), notes: "Standardfach für ausgabefähige Waffen." },
-    { key: "kammer", name: "Waffenkammer", number: "02", location: "Clubhaus Sandy Shores, Hinterzimmer", code: "9013", password: "ironcross", roles: ["PRESIDENT", "VICE_PRESIDENT", "SERGEANT_AT_ARMS"] as Role[], notes: "Nur für Officers mit Waffenverantwortung." },
-    { key: "werkstatt", name: "Werkstatt-Spind", number: "03", location: "Clubhaus Sandy Shores, Werkstatt", code: "1234", password: "rookie", roles: allRoles, notes: "Werkzeug und Nahkampfwaffen. Auch für Prospects." },
-    { key: "reserve", name: "Notreserve Paleto", number: "07", location: "Paleto Bay, Lagerhalle 4", code: "666", password: "lastride", roles: ["PRESIDENT", "VICE_PRESIDENT"] as Role[], notes: "Nur im Ernstfall öffnen." },
+  const fullMembers = allRoles.filter((r) => r !== "PROSPECT");
+  const paid = (y: number, m: number, d: number) => zonedTimeToDate(y, m, d, 12, 0);
+  const lockerData: Array<{
+    key: string;
+    name: string;
+    number: string;
+    location: string | null;
+    code: string;
+    password: string | null;
+    purpose: string | null;
+    paidAt: Date | null;
+    roles: Role[];
+    notes: string | null;
+  }> = [
+    // Die beiden ersten echten Fächer aus der Club-Liste
+    { key: "ezekiel", name: "Ezekiel", number: "84043155", location: null, code: "0000", password: null, purpose: "Moonshine / Muffins", paidAt: paid(2026, 10, 30), roles: fullMembers, notes: null },
+    { key: "adjovi", name: "Adjovi", number: "73925557", location: null, code: "0000", password: null, purpose: "Moonshine / Muffins", paidAt: paid(2026, 11, 13), roles: fullMembers, notes: null },
+    // Beispiel-Fächer für das Waffenlager
+    { key: "keller", name: "Clubhaus Keller", number: "01", location: "Clubhaus Sandy Shores, Keller", code: "4471", password: "grimreaper", purpose: "Waffen (Ausgabe)", paidAt: paid(2026, 11, 1), roles: fullMembers, notes: "Standardfach für ausgabefähige Waffen." },
+    { key: "kammer", name: "Waffenkammer", number: "02", location: "Clubhaus Sandy Shores, Hinterzimmer", code: "9013", password: "ironcross", purpose: "Waffen (Officers)", paidAt: paid(2026, 11, 1), roles: ["PRESIDENT", "VICE_PRESIDENT", "SERGEANT_AT_ARMS"], notes: "Nur für Officers mit Waffenverantwortung." },
+    { key: "werkstatt", name: "Werkstatt-Spind", number: "03", location: "Clubhaus Sandy Shores, Werkstatt", code: "1234", password: "rookie", purpose: "Werkzeug / Nahkampf", paidAt: null, roles: allRoles, notes: "Auch für Prospects." },
+    { key: "reserve", name: "Notreserve Paleto", number: "07", location: "Paleto Bay, Lagerhalle 4", code: "666", password: "lastride", purpose: "Notreserve", paidAt: paid(2026, 10, 15), roles: ["PRESIDENT", "VICE_PRESIDENT"], notes: "Nur im Ernstfall öffnen." },
   ];
   const lockers: Record<string, { id: string; name: string }> = {};
   for (const l of lockerData) {
@@ -199,8 +216,10 @@ async function main() {
         name: l.name,
         number: l.number,
         location: l.location,
+        purpose: l.purpose,
+        paidAt: l.paidAt,
         codeEncrypted: encryptSecret(l.code),
-        passwordEncrypted: encryptSecret(l.password),
+        passwordEncrypted: l.password ? encryptSecret(l.password) : null,
         notes: l.notes,
         access: { create: l.roles.map((role) => ({ role })) },
       },

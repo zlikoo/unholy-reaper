@@ -232,18 +232,23 @@ model WeaponMovement {
 
 /// Schließfach auf dem Server (Waffenlager). Code und Passwort sind verschlüsselt gespeichert.
 model Locker {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
+  /// Name des Fachs (z. B. auf wen es läuft)
   name              String
-  /// Fachnummer im Spiel
+  /// Schließfachnummer im Spiel
   number            String?
   location          String?
+  /// Wofür das Fach genutzt wird, z. B. "Moonshine / Muffins"
+  purpose           String?
+  /// Wann die Miete zuletzt bezahlt wurde
+  paidAt            DateTime?
   /// Zahlenschloss-Code, AES-256-GCM verschlüsselt
   codeEncrypted     String?
   /// Passwort, AES-256-GCM verschlüsselt
   passwordEncrypted String?
   notes             String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   access    LockerAccess[]
   weapons   Weapon[]
