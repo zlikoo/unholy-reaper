@@ -183,7 +183,7 @@ Mit `?schema=unholy_reaper` legt die App alle Tabellen in ein eigenes Schema. So
 
 Neon (über Vercel → Storage) funktioniert ebenso: Die Integration setzt `DATABASE_URL` und `DATABASE_URL_UNPOOLED`, beide werden automatisch erkannt.
 
-Der Build-Befehl `npm run vercel-build` steht in `vercel.json` und wird beim Import automatisch übernommen. Er prüft zuerst, ob `DATABASE_URL`, `SECRET_KEY` und `SETUP_CODE` gesetzt sind, dann das Postgres-Schema, erzeugt den Client, wendet die Migrationen an und baut die App.
+Die Funktionen laufen in Dublin (`dub1` in `vercel.json`), nah an der Supabase-Datenbank in `eu-west-1`. Liegt die Datenbank woanders, die Region dort anpassen. Der Build-Befehl `npm run vercel-build` steht ebenfalls in `vercel.json` und wird beim Import automatisch übernommen. Er prüft zuerst, ob `DATABASE_URL`, `SECRET_KEY` und `SETUP_CODE` gesetzt sind, dann das Postgres-Schema, erzeugt den Client, wendet die Migrationen an und baut die App.
 
 Erster Login: Beim ersten Aufruf leitet die App auf `/setup` um. Dort mit dem `SETUP_CODE` den ersten President anlegen; dabei werden auch die Clubregeln angelegt. Danach ist `/setup` gesperrt.
 
