@@ -4,8 +4,8 @@
 // Datenmodell für das Unholy Reaper MC Verwaltungstool.
 // Alle Daten sind fiktive In-Game-Daten eines GTA-Roleplay-Servers.
 //
-// Umstieg auf Postgres: provider auf "postgresql" ändern, DATABASE_URL anpassen
-// und in src/lib/db.ts den Adapter tauschen (siehe README).
+// Dieses Schema (SQLite) ist die Quelle. Die Postgres-Variante für Vercel wird mit
+// "npm run db:pg-schema" nach prisma/postgres/schema.prisma erzeugt (siehe README).
 
 generator client {
   provider = "prisma-client"
