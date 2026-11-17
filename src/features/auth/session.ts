@@ -6,7 +6,9 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import type { Role } from "@/generated/prisma/enums";
 
-export const SESSION_COOKIE = "ur_session";
+import { SESSION_COOKIE } from "@/lib/session-cookie";
+
+export { SESSION_COOKIE };
 const SESSION_DAYS = 30;
 
 export type SessionUser = {

@@ -4,6 +4,13 @@ import type { WeaponStatus } from "@/generated/prisma/enums";
 
 type Tx = Prisma.TransactionClient;
 
+/** Der Posten wurde zwischen Laden und Speichern verändert (z. B. gleichzeitige Ausgabe). */
+export class InventoryConflictError extends Error {
+  constructor() {
+    super("Der Bestand hat sich gerade geändert. Bitte Seite neu laden und erneut versuchen.");
+  }
+}
+
 type Target = {
   status: WeaponStatus;
   holderId: string | null;
@@ -41,8 +48,12 @@ async function mergeIntoStock(tx: Tx, row: Weapon): Promise<Weapon> {
  * (z. B. Lager → ausgegeben). Bei einer Teilmenge wird der Posten aufgeteilt.
  * Gibt den Posten zurück, in dem die verschobenen Stücke jetzt liegen.
  */
-export async function moveQuantity(tx: Tx, weapon: Weapon, quantity: number, target: Target): Promise<Weapon> {
-  if (quantity > weapon.quantity) throw new Error("Menge zu groß");
+export async function moveQuantity(tx: Tx, snapshot: Weapon, quantity: number, target: Target): Promise<Weapon> {
+  // Aktuellen Stand innerhalb der Transaktion lesen, nicht den vorher geladenen.
+  const weapon = await tx.weapon.findUnique({ where: { id: snapshot.id } });
+  if (!weapon || weapon.status !== snapshot.status || quantity > weapon.quantity) {
+    throw new InventoryConflictError();
+  }
 
   if (quantity === weapon.quantity) {
     const updated = await tx.weapon.update({ where: { id: weapon.id }, data: target });

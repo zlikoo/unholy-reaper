@@ -1,10 +1,10 @@
 import "server-only";
 
-// Einfache Sperre gegen Passwort-Raten: nach 5 Fehlversuchen in 10 Minuten
-// ist der Login für diese Kombination aus Benutzername und IP 10 Minuten gesperrt.
+// Einfache Sperre gegen Passwort-Raten: nach 8 Fehlversuchen in 10 Minuten
+// ist der Login für diesen Benutzernamen 10 Minuten gesperrt.
 // Liegt nur im Arbeitsspeicher und gilt daher pro Server-Prozess.
 
-const MAX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = 8;
 const WINDOW_MS = 10 * 60 * 1000;
 
 type Entry = { count: number; firstAttempt: number; blockedUntil?: number };
@@ -23,8 +23,16 @@ export function loginBlockedFor(key: string): number {
   return remaining;
 }
 
+/** Entfernt Einträge, deren Zeitfenster und Sperre abgelaufen sind. */
+function prune(now: number) {
+  for (const [key, entry] of attempts) {
+    if (now - entry.firstAttempt > WINDOW_MS && (!entry.blockedUntil || entry.blockedUntil < now)) attempts.delete(key);
+  }
+}
+
 export function registerFailedLogin(key: string) {
   const now = Date.now();
+  prune(now);
   const entry = attempts.get(key);
   if (!entry || now - entry.firstAttempt > WINDOW_MS) {
     attempts.set(key, { count: 1, firstAttempt: now });

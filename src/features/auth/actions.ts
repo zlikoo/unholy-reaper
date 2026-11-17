@@ -1,6 +1,5 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -20,8 +19,8 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
   if (!parsed.success) return validationError(parsed.error);
 
   const username = parsed.data.username.toLowerCase();
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() ?? "lokal";
-  const limitKey = `${username}|${ip}`;
+  // Pro Benutzername zählen: Header wie X-Forwarded-For kann ein Angreifer frei setzen.
+  const limitKey = username;
 
   const blockedMs = loginBlockedFor(limitKey);
   if (blockedMs > 0) {

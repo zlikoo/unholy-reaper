@@ -127,10 +127,23 @@ export async function deleteTransactionAction(transactionId: string): Promise<Ac
   const user = await requireUser();
   if (!can(user.role, "treasury.edit")) return noPermission();
 
-  const transaction = await db.transaction.findUnique({ where: { id: transactionId } });
-  if (!transaction) return actionError("Buchung nicht gefunden.");
+  const result = await db.$transaction(async (tx) => {
+    const transaction = await tx.transaction.findUnique({ where: { id: transactionId } });
+    if (!transaction) return { error: "Buchung nicht gefunden." };
+    if (transaction.type === "DEPOSIT" && transaction.status === "APPROVED") {
+      const balance = await getBalance(tx);
+      if (balance - transaction.amount < 0) {
+        return {
+          error: `Löschen nicht möglich: Der Kontostand würde auf ${formatMoney(balance - transaction.amount)} fallen. Zuerst die passenden Auszahlungen löschen.`,
+        };
+      }
+    }
+    await tx.transaction.delete({ where: { id: transaction.id } });
+    return { transaction };
+  });
+  if ("error" in result) return actionError(result.error ?? "Fehler");
+  const { transaction } = result;
 
-  await db.transaction.delete({ where: { id: transaction.id } });
   await logActivity({
     userId: user.id,
     action: "transaction.delete",

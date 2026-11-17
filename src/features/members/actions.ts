@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { actionError, actionSuccess, noPermission, validationError, type ActionState } from "@/lib/action-state";
 import { formatDate } from "@/lib/format";
 import { ROLE_LABELS } from "@/lib/labels";
+import { isUniqueViolation } from "@/lib/prisma-errors";
 import { formToObject } from "@/lib/validation";
 import { collectChanges, describeChanges, logActivity } from "@/features/activity/log";
 import { hashPassword } from "@/features/auth/password";
@@ -47,6 +48,7 @@ export async function createMemberAction(_prev: ActionState, formData: FormData)
   const sponsorCheck = await checkSponsor(data.sponsorId);
   if (!sponsorCheck.ok) return actionError(sponsorCheck.error, { sponsorId: [sponsorCheck.error] });
 
+  const taken = () => actionError("Dieser Benutzername ist schon vergeben.", { username: ["Bereits vergeben."] });
   const member = await db.user.create({
     data: {
       username: data.username,
@@ -59,7 +61,11 @@ export async function createMemberAction(_prev: ActionState, formData: FormData)
       active: data.active,
       passwordHash: await hashPassword(data.password),
     },
+  }).catch((error: unknown) => {
+    if (isUniqueViolation(error)) return null;
+    throw error;
   });
+  if (!member) return taken();
 
   await logActivity({
     userId: user.id,
@@ -103,7 +109,12 @@ export async function updateMemberAction(memberId: string, _prev: ActionState, f
   const sponsorCheck = await checkSponsor(data.sponsorId, member.id);
   if (!sponsorCheck.ok) return actionError(sponsorCheck.error, { sponsorId: [sponsorCheck.error] });
 
-  await db.user.update({ where: { id: member.id }, data });
+  try {
+    await db.user.update({ where: { id: member.id }, data });
+  } catch (error) {
+    if (isUniqueViolation(error)) return actionError("Dieser Benutzername ist schon vergeben.", { username: ["Bereits vergeben."] });
+    throw error;
+  }
 
   const changes = collectChanges({
     Benutzername: [member.username, data.username],

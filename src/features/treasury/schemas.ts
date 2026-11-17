@@ -16,7 +16,9 @@ export const transactionSchema = z.object({
 export const thresholdSchema = z.object({
   threshold: z.preprocess(
     (value) => {
-      const raw = typeof value === "string" ? value.replace(/[\s.$]/g, "") : "";
+      let raw = typeof value === "string" ? value.replace(/[\s$]/g, "") : "";
+      if (/^\d{1,3}(\.\d{3})+$/.test(raw)) raw = raw.replace(/\./g, "");
+      raw = raw.replace(",", ".");
       return raw === "" ? undefined : Number(raw);
     },
     z

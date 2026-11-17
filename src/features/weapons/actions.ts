@@ -12,7 +12,7 @@ import { collectChanges, describeChanges, logActivity } from "@/features/activit
 import { can } from "@/features/auth/permissions";
 import { requireUser, type SessionUser } from "@/features/auth/session";
 import { canAccessLocker, weaponWhere } from "@/features/lockers/access";
-import { mergeIntoStock, moveQuantity } from "./inventory";
+import { InventoryConflictError, mergeIntoStock, moveQuantity } from "./inventory";
 import { issueSchema, lostSchema, returnSchema, weaponCreateSchema, weaponUpdateSchema } from "./schemas";
 
 const itemLabel = (quantity: number, weapon: { name: string; serialNumber: string | null }) =>
@@ -27,6 +27,16 @@ async function lockerName(lockerId: string | null) {
 /** Posten laden, aber nur, wenn der Rang ihn sehen darf. */
 async function loadWeapon(user: SessionUser, weaponId: string) {
   return db.weapon.findFirst({ where: { AND: [{ id: weaponId }, weaponWhere(user.role)] } });
+}
+
+/** Führt eine Lagerbewegung aus und übersetzt Bestandskonflikte in eine Fehlermeldung. */
+async function runInventoryTx<T>(work: (tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => Promise<T>) {
+  try {
+    return { ok: true as const, value: await db.$transaction(work) };
+  } catch (error) {
+    if (error instanceof InventoryConflictError) return { ok: false as const, error: error.message };
+    throw error;
+  }
 }
 
 function revalidateWeapons(...ids: string[]) {
@@ -194,7 +204,7 @@ export async function issueWeaponAction(weaponId: string, _prev: ActionState, fo
   }
   const fromLocker = await lockerName(weapon.lockerId);
 
-  const row = await db.$transaction(async (tx) => {
+  const result = await runInventoryTx(async (tx) => {
     const moved = await moveQuantity(tx, weapon, data.quantity, {
       status: "ISSUED",
       holderId: member.id,
@@ -224,6 +234,8 @@ export async function issueWeaponAction(weaponId: string, _prev: ActionState, fo
     );
     return moved;
   });
+  if (!result.ok) return actionError(result.error);
+  const row = result.value;
 
   revalidateWeapons(weapon.id, row.id);
   redirect(`/waffenlager/${row.id}`);
@@ -262,7 +274,7 @@ async function returnOrFind(weaponId: string, formData: FormData, type: "RETURN"
     : null;
   const targetLocker = await lockerName(data.lockerId);
 
-  const row = await db.$transaction(async (tx) => {
+  const result = await runInventoryTx(async (tx) => {
     const moved = await moveQuantity(tx, weapon, data.quantity, {
       status: "IN_STOCK",
       holderId: null,
@@ -296,6 +308,8 @@ async function returnOrFind(weaponId: string, formData: FormData, type: "RETURN"
     );
     return moved;
   });
+  if (!result.ok) return actionError(result.error);
+  const row = result.value;
 
   revalidateWeapons(weapon.id, row.id);
   redirect(`/waffenlager/${row.id}`);
@@ -322,7 +336,7 @@ export async function lostWeaponAction(weaponId: string, _prev: ActionState, for
     : null;
   const fromLocker = await lockerName(weapon.lockerId);
 
-  const row = await db.$transaction(async (tx) => {
+  const result = await runInventoryTx(async (tx) => {
     const moved = await moveQuantity(tx, weapon, data.quantity, {
       status: "LOST",
       holderId: weapon.holderId,
@@ -352,6 +366,8 @@ export async function lostWeaponAction(weaponId: string, _prev: ActionState, for
     );
     return moved;
   });
+  if (!result.ok) return actionError(result.error);
+  const row = result.value;
 
   revalidateWeapons(weapon.id, row.id);
   redirect(`/waffenlager/${row.id}`);

@@ -33,18 +33,20 @@ function formatAxis(value: number) {
 
 function niceTicks(min: number, max: number, count = 4) {
   if (min === max) {
-    min -= 1;
-    max += 1;
+    // Keine Spannweite (z. B. leere Kasse): sinnvollen Bereich um den Wert legen
+    const pad = Math.max(1000, Math.abs(min) * 0.1);
+    min -= pad;
+    max += pad;
   }
   const raw = (max - min) / count;
   const magnitude = 10 ** Math.floor(Math.log10(raw));
   const normalized = raw / magnitude;
-  const step = (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10) * magnitude;
+  const step = Math.max(1, (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10) * magnitude);
   const ticks: number[] = [];
   for (let v = Math.floor(min / step) * step; v <= Math.ceil(max / step) * step + step / 1e6; v += step) {
-    ticks.push(Math.round(v));
+    ticks.push(Math.round(v) || 0);
   }
-  return ticks;
+  return [...new Set(ticks)];
 }
 
 /** Säule mit 4px abgerundetem Datenende und gerader Kante an der Nulllinie. */

@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE } from "@/lib/session-cookie";
 
 // Schnelle Vorprüfung: Ohne Session-Cookie geht es direkt zum Login.
 // Die eigentliche Prüfung (gültige Sitzung, aktives Konto, Rang) passiert
 // serverseitig in jeder Seite und jeder Server Action.
-const SESSION_COOKIE = "ur_session";
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

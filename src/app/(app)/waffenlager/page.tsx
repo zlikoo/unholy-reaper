@@ -45,17 +45,18 @@ export default async function WeaponsPage({ searchParams }: PageProps<"/waffenla
       : {}),
   };
 
-  const [all, rows] = await Promise.all([
-    db.weapon.findMany({
-      where: visible,
-      select: { name: true, quantity: true, status: true, holderId: true, holder: { select: { id: true, name: true, roadName: true } }, id: true, serialNumber: true },
-    }),
-    db.weapon.findMany({
-      where: { AND: [visible, filter] },
-      include: { holder: { select: { id: true, name: true, roadName: true } }, locker: { select: { id: true, name: true, number: true } } },
-      orderBy: [{ name: "asc" }, { serialNumber: "asc" }],
-    }),
+  const include = {
+    holder: { select: { id: true, name: true, roadName: true } },
+    locker: { select: { id: true, name: true, number: true } },
+  } as const;
+  const orderBy = [{ name: "asc" as const }, { serialNumber: "asc" as const }];
+  const hasFilter = Boolean(q || status || lockerFilter);
+  // Ohne Filter reicht eine Abfrage für Übersicht und Liste.
+  const [all, filtered] = await Promise.all([
+    db.weapon.findMany({ where: visible, include, orderBy }),
+    hasFilter ? db.weapon.findMany({ where: { AND: [visible, filter] }, include, orderBy }) : Promise.resolve(null),
   ]);
+  const rows = filtered ?? all;
 
   const totals = { IN_STOCK: 0, ISSUED: 0, LOST: 0 };
   const byName = new Map<string, { IN_STOCK: number; ISSUED: number; LOST: number }>();

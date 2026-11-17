@@ -54,6 +54,12 @@ export function zonedTimeToDate(
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
+/** true, wenn es den Tag wirklich gibt (kein 31.02.). */
+function isRealDate(year: number, month: number, day: number) {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
 /** Wert für <input type="datetime-local">, z. B. "2026-11-17T20:15". */
 export function toDateTimeInputValue(date: Date) {
   const p = getZonedParts(date);
@@ -76,7 +82,7 @@ export function parseDateTimeInput(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
   if (!match) return null;
   const [, y, m, d, h, min] = match.map(Number);
-  if (m < 1 || m > 12 || d < 1 || d > 31 || h > 23 || min > 59) return null;
+  if (!isRealDate(y, m, d) || h > 23 || min > 59) return null;
   return zonedTimeToDate(y, m, d, h, min);
 }
 
@@ -85,7 +91,7 @@ export function parseDateInput(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return null;
   const [, y, m, d] = match.map(Number);
-  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  if (!isRealDate(y, m, d)) return null;
   return zonedTimeToDate(y, m, d, 12, 0);
 }
 

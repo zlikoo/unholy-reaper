@@ -6,6 +6,7 @@ import type { VehicleStatus } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { actionError, actionSuccess, noPermission, validationError, type ActionState } from "@/lib/action-state";
 import { memberDisplayName, VEHICLE_STATUS_LABELS, VEHICLE_STATUSES, VEHICLE_TYPE_LABELS } from "@/lib/labels";
+import { isUniqueViolation } from "@/lib/prisma-errors";
 import { formToObject } from "@/lib/validation";
 import { collectChanges, describeChanges, logActivity } from "@/features/activity/log";
 import { can } from "@/features/auth/permissions";
@@ -42,7 +43,13 @@ export async function createVehicleAction(_prev: ActionState, formData: FormData
     return actionError("Dieses Kennzeichen ist schon eingetragen.", { plate: ["Bereits vorhanden."] });
   }
 
-  const vehicle = await db.vehicle.create({ data });
+  let vehicle;
+  try {
+    vehicle = await db.vehicle.create({ data });
+  } catch (error) {
+    if (isUniqueViolation(error)) return actionError("Dieses Kennzeichen ist schon eingetragen.", { plate: ["Bereits vorhanden."] });
+    throw error;
+  }
   await logActivity({
     userId: user.id,
     action: "vehicle.create",
@@ -71,7 +78,12 @@ export async function updateVehicleAction(vehicleId: string, _prev: ActionState,
     return actionError("Dieses Kennzeichen ist schon eingetragen.", { plate: ["Bereits vorhanden."] });
   }
 
-  await db.vehicle.update({ where: { id: vehicle.id }, data });
+  try {
+    await db.vehicle.update({ where: { id: vehicle.id }, data });
+  } catch (error) {
+    if (isUniqueViolation(error)) return actionError("Dieses Kennzeichen ist schon eingetragen.", { plate: ["Bereits vorhanden."] });
+    throw error;
+  }
 
   const changes = collectChanges({
     Modell: [vehicle.model, data.model],

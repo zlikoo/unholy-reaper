@@ -45,7 +45,10 @@ export const optionalId = z.preprocess(
 export function positiveInt(label: string, max = 1_000_000_000) {
   return z.preprocess(
     (value) => {
-      const raw = asString(value).replace(/[\s.$]/g, "").replace(",", ".");
+      let raw = asString(value).replace(/[\s$]/g, "");
+      // "12.500" ist ein Tausenderpunkt, "12.5" oder "12,5" dagegen eine Dezimalzahl (wird abgelehnt)
+      if (/^\d{1,3}(\.\d{3})+$/.test(raw)) raw = raw.replace(/\./g, "");
+      raw = raw.replace(",", ".");
       return raw === "" ? undefined : Number(raw);
     },
     z
