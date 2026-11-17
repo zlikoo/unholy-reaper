@@ -1,8 +1,9 @@
-// Startinhalte der Seite "Clubregeln". Danach in der App pflegbar.
+// Startinhalte der Seite "Clubregeln" (aus den Club-Unterlagen). Danach in der App pflegbar.
+// Werden beim Seed, bei "npm run admin:create" und bei der Ersteinrichtung (/setup) angelegt.
 // Formatierung im Text: Zeilen mit "- " werden zur Liste, "1. " zur nummerierten Liste,
 // **so** wird fett, eine Leerzeile beginnt einen neuen Absatz.
 
-import type { RuleSection } from "../src/generated/prisma/enums";
+import type { RuleSection } from "@/generated/prisma/enums";
 
 export const DEFAULT_RULES: Array<{ section: RuleSection; title: string; content: string }> = [
   // ------------------------------------------------------------- Clubregeln

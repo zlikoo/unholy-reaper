@@ -17,6 +17,7 @@ import { requireUser } from "@/features/auth/session";
 import { quickVehicleStatusAction } from "@/features/vehicles/actions";
 import { VehicleImage } from "@/features/vehicles/components/vehicle-image";
 import { db } from "@/lib/db";
+import { textContains } from "@/lib/search";
 import {
   memberDisplayName,
   VEHICLE_STATUS_LABELS,
@@ -56,11 +57,11 @@ export default async function VehiclesPage({ searchParams }: PageProps<"/fahrzeu
     ...(q
       ? {
           OR: [
-            { model: { contains: q } },
-            { plate: { contains: q } },
-            { location: { contains: q } },
-            { notes: { contains: q } },
-            { owner: { is: { OR: [{ name: { contains: q } }, { roadName: { contains: q } }] } } },
+            { model: textContains(q) },
+            { plate: textContains(q) },
+            { location: textContains(q) },
+            { notes: textContains(q) },
+            { owner: { is: { OR: [{ name: textContains(q) }, { roadName: textContains(q) }] } } },
           ],
         }
       : {}),

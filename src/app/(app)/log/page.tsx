@@ -10,6 +10,7 @@ import { ActivityList } from "@/features/activity/components/activity-list";
 import { can } from "@/features/auth/permissions";
 import { requireUser } from "@/features/auth/session";
 import { db } from "@/lib/db";
+import { textContains } from "@/lib/search";
 import { LOG_ENTITIES, LOG_ENTITY_LABELS, memberDisplayName } from "@/lib/labels";
 import { getPage, getParam, pickEnum } from "@/lib/search-params";
 
@@ -33,7 +34,7 @@ export default async function LogPage({ searchParams }: PageProps<"/log">) {
   const where: Prisma.ActivityLogWhereInput = {
     ...(area ? { entityType: area } : {}),
     ...(memberId ? { userId: memberId } : {}),
-    ...(q ? { summary: { contains: q } } : {}),
+    ...(q ? { summary: textContains(q) } : {}),
   };
   const [total, entries] = await Promise.all([
     db.activityLog.count({ where }),

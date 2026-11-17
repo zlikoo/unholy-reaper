@@ -14,6 +14,7 @@ import { can } from "@/features/auth/permissions";
 import { requireUser } from "@/features/auth/session";
 import { getLockerOptions, weaponWhere } from "@/features/lockers/access";
 import { db } from "@/lib/db";
+import { textContains } from "@/lib/search";
 import { formatDate, formatNumber } from "@/lib/format";
 import { memberDisplayName, WEAPON_STATUS_LABELS, WEAPON_STATUS_TONES, WEAPON_STATUSES } from "@/lib/labels";
 import { getParam, pickEnum } from "@/lib/search-params";
@@ -37,9 +38,9 @@ export default async function WeaponsPage({ searchParams }: PageProps<"/waffenla
     ...(q
       ? {
           OR: [
-            { name: { contains: q } },
-            { serialNumber: { contains: q } },
-            { holder: { is: { OR: [{ name: { contains: q } }, { roadName: { contains: q } }] } } },
+            { name: textContains(q) },
+            { serialNumber: textContains(q) },
+            { holder: { is: { OR: [{ name: textContains(q) }, { roadName: textContains(q) }] } } },
           ],
         }
       : {}),

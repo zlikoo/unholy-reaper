@@ -13,6 +13,7 @@ import { Table, TD, TH, TR } from "@/components/ui/table";
 import { can } from "@/features/auth/permissions";
 import { requireUser } from "@/features/auth/session";
 import { db } from "@/lib/db";
+import { textContains } from "@/lib/search";
 import { formatDate } from "@/lib/format";
 import { ROLE_LABELS, ROLE_TONES, ROLES } from "@/lib/labels";
 import { getParam, pickEnum } from "@/lib/search-params";
@@ -36,7 +37,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/mitglied
     ...(role ? { role } : {}),
     ...(status === "aktiv" ? { active: true } : status === "inaktiv" ? { active: false } : {}),
     ...(q
-      ? { OR: [{ name: { contains: q } }, { roadName: { contains: q } }, { username: { contains: q } }] }
+      ? { OR: [{ name: textContains(q) }, { roadName: textContains(q) }, { username: textContains(q) }] }
       : {}),
   };
 

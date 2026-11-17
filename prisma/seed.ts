@@ -11,7 +11,7 @@ import { createPrismaClient } from "../src/lib/prisma-client";
 import { encryptSecret } from "../src/lib/crypto";
 import { zonedTimeToDate } from "../src/lib/dates";
 import type { Role } from "../src/generated/prisma/enums";
-import { DEFAULT_RULES } from "./seed-rules";
+import { DEFAULT_RULES } from "../src/features/rules/default-rules";
 
 const DEMO_PASSWORD = "reaper123";
 const db = createPrismaClient();

@@ -22,6 +22,7 @@ import { TreasuryChart } from "@/features/treasury/components/treasury-chart";
 import { getBalance, getDailySeries } from "@/features/treasury/queries";
 import { getApprovalThreshold } from "@/features/treasury/settings";
 import { db } from "@/lib/db";
+import { textContains } from "@/lib/search";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import {
   memberDisplayName,
@@ -59,8 +60,8 @@ export default async function TreasuryPage({ searchParams }: PageProps<"/kasse">
     ...(q
       ? {
           OR: [
-            { description: { contains: q } },
-            { member: { is: { OR: [{ name: { contains: q } }, { roadName: { contains: q } }] } } },
+            { description: textContains(q) },
+            { member: { is: { OR: [{ name: textContains(q) }, { roadName: textContains(q) }] } } },
           ],
         }
       : {}),

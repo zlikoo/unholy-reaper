@@ -4,11 +4,14 @@ import { Logo } from "@/components/layout/logo";
 import { Card, CardBody } from "@/components/ui/card";
 import { LoginForm } from "@/features/auth/components/login-form";
 import { getCurrentUser } from "@/features/auth/session";
+import { setupAvailable } from "@/features/setup/status";
 
 export const metadata: Metadata = { title: "Login" };
 
 export default async function LoginPage() {
   if (await getCurrentUser()) redirect("/");
+  // Leere Datenbank: zuerst die Ersteinrichtung
+  if (await setupAvailable()) redirect("/setup");
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">

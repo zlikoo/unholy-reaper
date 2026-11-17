@@ -63,7 +63,7 @@ Die App läuft dann unter http://localhost:3000.
 
 ## Ersten Admin-Account anlegen
 
-Der erste Account bekommt den Rang President und kann danach alle weiteren Mitglieder in der App unter „Mitglieder → Mitglied aufnehmen“ anlegen. Ist die Datenbank noch leer, legt das Skript außerdem die Clubregeln, die Hierarchie und die Regeln für Hangarounds und Prospects mit euren Startinhalten an (Quelle: `prisma/seed-rules.ts`).
+Der erste Account bekommt den Rang President und kann danach alle weiteren Mitglieder in der App unter „Mitglieder → Mitglied aufnehmen“ anlegen. Ist die Datenbank noch leer, legt das Skript außerdem die Clubregeln, die Hierarchie und die Regeln für Hangarounds und Prospects mit euren Startinhalten an (Quelle: `src/features/rules/default-rules.ts`).
 
 Interaktiv (fragt Benutzername, Name und Passwort ab):
 
@@ -164,21 +164,36 @@ Datensicherung: Die komplette Datenbank ist die Datei `prisma/dev.db`. Regelmä�
 
 Nach einem Update mit neuen Migrationen: `npm install` und `npm run db:deploy`.
 
-## Umstieg auf Postgres
+## Deployment auf Vercel (Postgres)
 
-1. Adapter installieren: `npm install @prisma/adapter-pg`
-2. In `prisma/schema.prisma` den Provider auf `postgresql` ändern.
-3. In der `.env` die Verbindung eintragen, z. B. `DATABASE_URL="postgresql://user:passwort@localhost:5432/unholy_reaper"`
-4. In `src/lib/prisma-client.ts` den Adapter tauschen:
-   ```ts
-   import { PrismaPg } from "@prisma/adapter-pg";
-   // …
-   const adapter = new PrismaPg({ connectionString: url });
-   ```
-5. Den Ordner `prisma/migrations` löschen (die Migrationen sind SQLite-spezifisch) und neu erzeugen: `npx prisma migrate dev --name init`
-6. Optional: Die Suchfelder vergleichen unter SQLite ohne Rücksicht auf Groß-/Kleinschreibung, unter Postgres nicht. Wer das gleiche Verhalten will, ergänzt bei den `contains`-Filtern `mode: "insensitive"` (Suche nach `contains:` in `src/app`).
+Auf Vercel gibt es kein dauerhaftes Dateisystem, deshalb läuft die App dort mit Postgres. Lokal bleibt SQLite. Welche Datenbank genutzt wird, entscheidet allein die URL in `DATABASE_URL`: `file:…` ist SQLite, `postgres://…` oder `postgresql://…` ist Postgres.
 
-Daten aus SQLite übernimmt man am einfachsten mit einem eigenen Export/Import-Skript oder mit Prisma Studio (`npm run db:studio`).
+Für Postgres gibt es eine erzeugte Schema-Variante mit eigenen Migrationen in `prisma/postgres/`. Die Quelle bleibt `prisma/schema.prisma`.
+
+Umgebungsvariablen im Vercel-Projekt:
+
+| Variable | Inhalt |
+|---|---|
+| `DATABASE_URL` | Postgres-Verbindung für die App. Bei Supabase der **Transaction Pooler** (Port 6543) mit `?pgbouncer=true&schema=unholy_reaper` |
+| `DIRECT_DATABASE_URL` | Verbindung für Migrationen. Bei Supabase der **Session Pooler** (Port 5432) mit `?schema=unholy_reaper` |
+| `SECRET_KEY` | Langer Zufallswert für die Schließfach-Verschlüsselung |
+| `SETUP_CODE` | Code für die Ersteinrichtung unter `/setup` |
+
+Mit `?schema=unholy_reaper` legt die App alle Tabellen in ein eigenes Schema. So kann sie ein bestehendes Supabase-Projekt mitbenutzen (der kostenlose Tarif erlaubt nur zwei Projekte), ohne mit dessen Tabellen zu kollidieren. Die Verbindungsdaten stehen in Supabase unter „Connect“.
+
+Neon (über Vercel → Storage) funktioniert ebenso: Die Integration setzt `DATABASE_URL` und `DATABASE_URL_UNPOOLED`, beide werden automatisch erkannt.
+
+Build-Befehl im Vercel-Projekt: `npm run vercel-build`. Er prüft das Postgres-Schema, erzeugt den Client, wendet die Migrationen an und baut die App.
+
+Erster Login: Beim ersten Aufruf leitet die App auf `/setup` um. Dort mit dem `SETUP_CODE` den ersten President anlegen; dabei werden auch die Clubregeln angelegt. Danach ist `/setup` gesperrt.
+
+Bei einer Schemaänderung: `prisma/schema.prisma` anpassen, lokal `npm run db:migrate` (SQLite), dann `npm run db:pg-schema` und eine Postgres-Migration erzeugen, zum Beispiel gegen eine lokale Postgres-Instanz aus `npx prisma dev`:
+
+```bash
+DATABASE_URL="postgres://…" npx prisma migrate dev --name beschreibung
+```
+
+Der Vercel-Build bricht ab, wenn `prisma/postgres/schema.prisma` nicht zum SQLite-Schema passt.
 
 ## Befehle
 
@@ -193,17 +208,20 @@ Daten aus SQLite übernimmt man am einfachsten mit einem eigenen Export/Import-S
 | `npm run db:reset` | Datenbank leeren und Beispieldaten neu laden |
 | `npm run db:studio` | Prisma Studio (Datenbank im Browser ansehen) |
 | `npm run admin:create` | Ersten Admin anlegen oder Konto zurücksetzen |
+| `npm run db:pg-schema` | Postgres-Schema aus dem SQLite-Schema erzeugen |
+| `npm run vercel-build` | Build für Vercel (Postgres-Migrationen + Build) |
 
 ## Ordnerstruktur
 
 ```
 prisma/
-  schema.prisma        Datenmodell
-  migrations/          Datenbank-Migrationen
+  schema.prisma        Datenmodell (Quelle, SQLite)
+  migrations/          SQLite-Migrationen
+  postgres/            Erzeugtes Postgres-Schema und Postgres-Migrationen
   seed.ts              Beispieldaten
-  seed-rules.ts        Startinhalte der Clubregeln
 scripts/
   create-admin.ts      Ersten Admin anlegen
+  generate-pg-schema.mjs  Postgres-Schema erzeugen
 public/logo.png        Club-Logo (austauschbar)
 src/
   app/                 Seiten (App Router), nur Routing und Seitenaufbau
@@ -230,7 +248,7 @@ Jeder Bereich unter `src/features` hat `actions.ts` (Server Actions mit Rechtepr
 
 ## Technische Hinweise
 
-- Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS 4, Prisma 7 mit `better-sqlite3`-Adapter, zod 4.
+- Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS 4, Prisma 7 (Adapter `better-sqlite3` lokal, `pg` für Postgres), zod 4.
 - `cacheComponents` ist bewusst abgeschaltet: Jede Seite hängt vom eingeloggten Mitglied ab und wird pro Anfrage gerendert.
 - Alle Eingaben werden serverseitig mit zod geprüft; Fehlermeldungen erscheinen direkt am Feld, die Eingaben bleiben erhalten.
 - Datumsangaben werden in der Zeitzone aus `APP_TIMEZONE` (Standard `Europe/Berlin`) angezeigt und eingegeben.

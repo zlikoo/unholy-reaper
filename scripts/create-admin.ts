@@ -6,7 +6,7 @@
 // Mit Parametern:
 //   npm run admin:create -- --username grim --name "Elias Voss" --password "geheim123"
 //
-// Sind noch keine Clubregeln gespeichert, werden die Startinhalte aus prisma/seed-rules.ts angelegt.
+// Sind noch keine Clubregeln gespeichert, werden die Startinhalte aus src/features/rules/default-rules.ts angelegt.
 //
 // Existiert der Benutzername bereits, bricht das Skript ab. Mit --reset werden
 // Passwort, Rang (President) und Aktiv-Status des vorhandenen Kontos zurückgesetzt
@@ -18,7 +18,7 @@ import { Writable } from "node:stream";
 import { stdin, stdout } from "node:process";
 import bcrypt from "bcryptjs";
 import { createPrismaClient } from "../src/lib/prisma-client";
-import { DEFAULT_RULES } from "../prisma/seed-rules";
+import { DEFAULT_RULES } from "../src/features/rules/default-rules";
 
 const MIN_PASSWORD = 8;
 
